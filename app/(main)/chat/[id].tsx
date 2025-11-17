@@ -1,17 +1,17 @@
 import { MessageBubble } from "@/components/MessageBubble";
 import { NeonGlow } from "@/components/NeonGlow";
-import { createMessage, getChatMessages, updateMessage, deleteMessage, forwardMessage, getUserChats, createCall } from "@/lib/api/db";
+import { useVoiceRecorder } from "@/hooks/useVoiceRecorder";
+import { createCall, createMessage, deleteMessage, forwardMessage, getChatMessages, getUserChats, updateMessage } from "@/lib/api/db";
 import { formatTime } from "@/lib/utils/format";
 import { showImagePickerOptions } from "@/lib/utils/imagePicker";
 import { useAuthStore } from "@/stores/authStore";
 import { useChatStore } from "@/stores/chatStore";
 import { useMessageStore } from "@/stores/messageStore";
-import { useVoiceRecorder } from "@/hooks/useVoiceRecorder";
 import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft, CaretDown, Image as ImageIcon, Microphone, PaperPlaneTilt, Phone, VideoCamera, X } from "phosphor-react-native";
 import React, { useEffect, useRef, useState } from "react";
-import { FlatList, KeyboardAvoidingView, Platform, Text, TextInput, TouchableOpacity, View, Alert, Modal } from "react-native";
+import { FlatList, KeyboardAvoidingView, Modal, Platform, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 export default function ChatScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -47,7 +47,7 @@ export default function ChatScreen() {
           userId: msg.userId,
           content: msg.content,
           type: msg.type as "text" | "image" | "voice" | "video" | "file",
-          isRead: msg.isRead,
+          isRead: msg.isRead ?? false,
           createdAt: msg.createdAt,
         }))
       );
@@ -76,7 +76,7 @@ export default function ChatScreen() {
           userId: newMessage.userId,
           content: newMessage.content,
           type: newMessage.type as "text",
-          isRead: newMessage.isRead,
+          isRead: newMessage.isRead ?? false,
           createdAt: newMessage.createdAt,
         },
       ]);
@@ -117,7 +117,7 @@ export default function ChatScreen() {
           userId: newMessage.userId,
           content: newMessage.content,
           type: newMessage.type as "image",
-          isRead: newMessage.isRead,
+          isRead: newMessage.isRead ?? false,
           createdAt: newMessage.createdAt,
         },
       ]);
@@ -140,7 +140,7 @@ export default function ChatScreen() {
               userId: newMessage.userId,
               content: newMessage.content,
               type: newMessage.type as "voice",
-              isRead: newMessage.isRead,
+              isRead: newMessage.isRead ?? false,
               createdAt: newMessage.createdAt,
             },
           ]);
@@ -387,7 +387,6 @@ export default function ChatScreen() {
           </View>
         </Modal>
       )}
-      </View>
     </KeyboardAvoidingView>
   );
 }
