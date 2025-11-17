@@ -33,6 +33,11 @@ export function useVideoCall(roomID: string, userID: string, userName: string) {
   }, []);
 
   const handleJoinCall = async (video: boolean = true) => {
+    if (Platform.OS === "web") {
+      console.warn("Video calls are not supported on web platform");
+      return;
+    }
+
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       

@@ -25,8 +25,18 @@ export default function WelcomeScreen() {
     ]).start();
 
     // Редирект на авторизацию через 2 секунды
-    const timer = setTimeout(() => {
-      router.replace("/(auth)/phone");
+    const timer = setTimeout(async () => {
+      try {
+        // Mark welcome as seen
+        const AsyncStorage = (await import("@react-native-async-storage/async-storage")).default;
+        await AsyncStorage.setItem("hasSeenWelcome", "true");
+        
+        // Navigate to auth
+        router.replace("/(auth)/phone");
+      } catch (error) {
+        console.error("Error saving welcome state:", error);
+        router.replace("/(auth)/phone");
+      }
     }, 2000);
 
     return () => clearTimeout(timer);

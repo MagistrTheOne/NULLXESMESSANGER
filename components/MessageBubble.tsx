@@ -2,7 +2,7 @@ import { addFavorite, addMessageReaction, getMessageReactions, getUserFavorites,
 import { useAuthStore } from "@/stores/authStore";
 import { useFavoritesStore } from "@/stores/favoritesStore";
 import * as Haptics from "expo-haptics";
-import { ArrowRight, Check, Pencil, Smiley, Star, Trash } from "phosphor-react-native";
+import { ArrowRight, ArrowUUpLeft, Check, Pencil, Smiley, Star, Trash } from "phosphor-react-native";
 import React, { useEffect, useState } from "react";
 import { Alert, Image, Text, TouchableOpacity, View } from "react-native";
 import { EmojiPicker } from "./EmojiPicker";
@@ -18,9 +18,19 @@ interface MessageBubbleProps {
   type?: "text" | "image" | "voice" | "video" | "file";
   messageId?: string;
   chatId?: string;
+  replyToId?: string | null;
+  replyToMessage?: {
+    id: string;
+    content: string;
+    type: "text" | "image" | "voice" | "video" | "file";
+    userId: string;
+    userName?: string;
+  } | null;
+  searchQuery?: string;
   onEdit?: (messageId: string) => void;
   onDelete?: (messageId: string, deleteForEveryone: boolean) => void;
   onForward?: (messageId: string) => void;
+  onReply?: (messageId: string) => void;
 }
 
 export function MessageBubble({
@@ -33,9 +43,13 @@ export function MessageBubble({
   type = "text",
   messageId,
   chatId,
+  replyToId,
+  replyToMessage,
+  searchQuery,
   onEdit,
   onDelete,
   onForward,
+  onReply,
 }: MessageBubbleProps) {
   const user = useAuthStore((state) => state.user);
   const { isFavorite: isFavoriteInStore, addFavorite: addToStore, removeFavorite: removeFromStore } = useFavoritesStore();
@@ -187,6 +201,25 @@ export function MessageBubble({
           onLongPress={handleLongPress}
           activeOpacity={0.9}
         >
+        {replyToMessage && (
+          <View className={`mb-2 pl-3 border-l-2 ${isOwn ? "border-white/30" : "border-accent/50"} rounded`}>
+            <Text className={`text-xs font-semibold mb-1 ${isOwn ? "text-white/80" : "text-accent"}`}>
+              {replyToMessage.userId === user?.id ? "Вы" : replyToMessage.userName || "Пользователь"}
+            </Text>
+            {replyToMessage.type === "image" ? (
+              <Text className={`text-xs ${isOwn ? "text-white/60" : "text-text-muted"}`}>📷 Фото</Text>
+            ) : replyToMessage.type === "voice" ? (
+              <Text className={`text-xs ${isOwn ? "text-white/60" : "text-text-muted"}`}>🎤 Голосовое сообщение</Text>
+            ) : (
+              <Text 
+                className={`text-xs ${isOwn ? "text-white/60" : "text-text-muted"}`}
+                numberOfLines={2}
+              >
+                {replyToMessage.content}
+              </Text>
+            )}
+          </View>
+        )}
         {type === "image" && imageUri && (
           <TouchableOpacity className="mb-2 rounded-xl overflow-hidden">
             <Image
@@ -202,7 +235,20 @@ export function MessageBubble({
         )}
         {text && type !== "voice" && (
           <Text className={`text-base ${isOwn ? "text-white" : "text-text-primary"}`}>
-            {text}
+            {searchQuery && text.toLowerCase().includes(searchQuery.toLowerCase()) ? (
+              <Text>
+                {text.split(new RegExp(`(${searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, "gi")).map((part, index) => (
+                  <Text
+                    key={index}
+                    className={part.toLowerCase() === searchQuery.toLowerCase() ? "bg-accent/50 font-semibold" : ""}
+                  >
+                    {part}
+                  </Text>
+                ))}
+              </Text>
+            ) : (
+              text
+            )}
           </Text>
         )}
         <View className="flex-row items-center justify-end mt-1">

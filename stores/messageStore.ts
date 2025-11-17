@@ -6,6 +6,7 @@ interface Message {
   userId: string;
   content: string;
   type: "text" | "image" | "voice" | "video" | "file";
+  replyToId?: string | null;
   isRead: boolean;
   createdAt: Date;
 }

@@ -36,6 +36,7 @@ export default function MainLayout() {
         <Drawer.Screen name="chats" options={{ drawerLabel: "Чаты" }} />
         <Drawer.Screen name="chat/[id]" options={{ drawerItemStyle: { display: "none" } }} />
         <Drawer.Screen name="chat/[id]/group" options={{ drawerItemStyle: { display: "none" } }} />
+        <Drawer.Screen name="chat/[id]/media" options={{ drawerItemStyle: { display: "none" } }} />
         <Drawer.Screen name="call/video" options={{ drawerItemStyle: { display: "none" } }} />
         <Drawer.Screen name="stories/create" options={{ drawerItemStyle: { display: "none" } }} />
         <Drawer.Screen name="stories/viewer" options={{ drawerItemStyle: { display: "none" } }} />

@@ -1,5 +1,5 @@
 import { annaConversations, calls, chatMembers, chats, contacts, db, favorites, messageReactions, messages, pinnedChats, stories, storyViews, userSessions, users } from "@/db";
-import { and, desc, eq, gt, isNull } from "drizzle-orm";
+import { and, desc, eq, gt, isNull, or } from "drizzle-orm";
 
 export async function createUser(phone: string, name?: string) {
   const [user] = await db
@@ -184,7 +184,30 @@ export async function getChatMessages(chatId: string, limit = 50) {
     .limit(limit);
 }
 
-export async function createMessage(chatId: string, userId: string, content: string, type: "text" | "image" | "voice" | "video" | "file" = "text") {
+export async function getChatMedia(chatId: string) {
+  return await db
+    .select()
+    .from(messages)
+    .where(
+      and(
+        eq(messages.chatId, chatId),
+        or(
+          eq(messages.type, "image"),
+          eq(messages.type, "video"),
+          eq(messages.type, "file")
+        )
+      )
+    )
+    .orderBy(desc(messages.createdAt));
+}
+
+export async function createMessage(
+  chatId: string,
+  userId: string,
+  content: string,
+  type: "text" | "image" | "voice" | "video" | "file" = "text",
+  replyToId?: string | null
+) {
   const [message] = await db
     .insert(messages)
     .values({
@@ -192,6 +215,7 @@ export async function createMessage(chatId: string, userId: string, content: str
       userId,
       content,
       type,
+      replyToId: replyToId || null,
     })
     .returning();
 
@@ -204,6 +228,15 @@ export async function createMessage(chatId: string, userId: string, content: str
     })
     .where(eq(chats.id, chatId));
 
+  return message;
+}
+
+export async function getMessageById(messageId: string) {
+  const [message] = await db
+    .select()
+    .from(messages)
+    .where(eq(messages.id, messageId))
+    .limit(1);
   return message;
 }
 
