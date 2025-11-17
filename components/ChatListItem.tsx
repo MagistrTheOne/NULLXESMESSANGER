@@ -1,4 +1,4 @@
-import { Check, CheckCheck, Pin } from "phosphor-react-native";
+import { Check, PushPin } from "phosphor-react-native";
 import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { Avatar } from "./ui/Avatar";
@@ -75,12 +75,12 @@ export function ChatListItem({
         <View className="flex-row items-center">
           {isPinned && (
             <View className="mr-1">
-              <Pin size={14} color="#00B7FF" weight="fill" />
+              <PushPin size={14} color="#00B7FF" weight="fill" />
             </View>
           )}
           <View className="mr-1">
             {isRead ? (
-              <CheckCheck size={16} color="#00B7FF" weight="fill" />
+              <Check size={16} color="#00B7FF" weight="fill" />
             ) : (
               <Check size={16} color="#6B7280" />
             )}

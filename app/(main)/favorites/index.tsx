@@ -6,7 +6,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { useFavoritesStore, type FavoriteType } from "@/stores/favoritesStore";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import { ArrowLeft, Bookmark, Image as ImageIcon, Link, MessageText, X } from "phosphor-react-native";
+import { ArrowLeft, Bookmark, ChatText, Image as ImageIcon, Link, X } from "phosphor-react-native";
 import React, { useEffect, useState } from "react";
 import { FlatList, Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
 
@@ -66,7 +66,7 @@ export default function FavoritesScreen() {
 
   const tabs: Array<{ type: FavoriteType | "all"; label: string; icon: any }> = [
     { type: "all", label: "Все", icon: Bookmark },
-    { type: "message", label: "Сообщения", icon: MessageText },
+    { type: "message", label: "Сообщения", icon: ChatText },
     { type: "media", label: "Медиа", icon: ImageIcon },
     { type: "link", label: "Ссылки", icon: Link },
   ];
@@ -75,7 +75,7 @@ export default function FavoritesScreen() {
     const getTypeIcon = () => {
       switch (item.type) {
         case "message":
-          return <MessageText size={20} color="#00B7FF" />;
+          return <ChatText size={20} color="#00B7FF" />;
         case "media":
           return <ImageIcon size={20} color="#00B7FF" />;
         case "link":

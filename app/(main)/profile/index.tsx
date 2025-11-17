@@ -8,7 +8,7 @@ import { showImagePickerOptions } from "@/lib/utils/imagePicker";
 import { useAuthStore } from "@/stores/authStore";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import { ArrowLeft, Bookmark, Camera, ChatCircle, Circle, Image as ImageIcon, MessageText } from "phosphor-react-native";
+import { ArrowLeft, Bookmark, Camera, ChatCircle, ChatText, Circle, Image as ImageIcon } from "phosphor-react-native";
 import React, { useEffect, useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 
@@ -157,7 +157,7 @@ export default function ProfileScreen() {
             <View className="w-1/2 mb-4">
               <NeonGlow color="blue" intensity="low">
                 <View className="bg-secondary/40 rounded-xl p-4 items-center">
-                  <MessageText size={32} color="#00B7FF" weight="fill" />
+                  <ChatText size={32} color="#00B7FF" weight="fill" />
                   <Text className="text-text-primary text-2xl font-bold mt-2">{stats.messagesCount}</Text>
                   <Text className="text-text-secondary text-xs mt-1">Сообщений</Text>
                 </View>

@@ -50,6 +50,15 @@ export async function updateUser(
   return updated;
 }
 
+export async function updateUserOnlineStatus(id: string, status: "online" | "offline" | "recently") {
+  const [updated] = await db
+    .update(users)
+    .set({ onlineStatus: status, lastSeen: new Date(), updatedAt: new Date() })
+    .where(eq(users.id, id))
+    .returning();
+  return updated;
+}
+
 export async function createChat(type: "private" | "group" | "channel", memberIds: string[], name?: string) {
   const [chat] = await db
     .insert(chats)
@@ -552,6 +561,9 @@ export async function forwardMessage(messageId: string, targetChatIds: string[],
 
   if (!originalMessage) return [];
 
+  const originalMetadata = originalMessage.metadata as Record<string, any> || {};
+  const forwardedMetadata = { ...originalMetadata, forwarded: true, originalMessageId: messageId };
+
   const forwardedMessages = await Promise.all(
     targetChatIds.map(async (chatId) => {
       const [forwarded] = await db
@@ -561,7 +573,7 @@ export async function forwardMessage(messageId: string, targetChatIds: string[],
           userId,
           content: originalMessage.content,
           type: originalMessage.type,
-          metadata: { ...originalMessage.metadata, forwarded: true, originalMessageId: messageId },
+          metadata: forwardedMetadata,
         })
         .returning();
       return forwarded;
