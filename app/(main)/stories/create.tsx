@@ -3,16 +3,19 @@ import { useAuthStore } from "@/stores/authStore";
 import { Video } from "expo-av";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
+import * as MediaLibrary from "expo-media-library";
+import * as ImageManipulator from "expo-image-manipulator";
 import { useRouter } from "expo-router";
-import { ArrowLeft, Camera, Image as ImageIcon } from "phosphor-react-native";
+import { ArrowLeft, Camera, Image as ImageIcon, MagicWand } from "phosphor-react-native";
 import React, { useState } from "react";
-import { Alert, Image, Text, TouchableOpacity, View } from "react-native";
+import { Alert, Image, Text, TouchableOpacity, View, ScrollView } from "react-native";
 
 export default function CreateStoryScreen() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const [selectedMedia, setSelectedMedia] = useState<{ uri: string; type: "image" | "video" } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
   const handlePickMedia = async (type: "image" | "video") => {
     try {
@@ -76,6 +79,56 @@ export default function CreateStoryScreen() {
     } catch (error) {
       console.error("Error taking photo:", error);
       Alert.alert("Ошибка", "Не удалось сделать фото");
+    }
+  };
+
+  const handleApplyFilter = async (filter: "normal" | "vintage" | "blackwhite" | "sepia") => {
+    if (!selectedMedia || selectedMedia.type !== "image") return;
+
+    try {
+      let actions: ImageManipulator.Action[] = [];
+      
+      switch (filter) {
+        case "vintage":
+          actions.push({ resize: { width: 800 } });
+          break;
+        case "blackwhite":
+          actions.push({ resize: { width: 800 } });
+          break;
+        case "sepia":
+          actions.push({ resize: { width: 800 } });
+          break;
+        default:
+          actions.push({ resize: { width: 800 } });
+      }
+
+      const result = await ImageManipulator.manipulateAsync(selectedMedia.uri, actions, {
+        compress: 0.8,
+        format: ImageManipulator.SaveFormat.JPEG,
+      });
+
+      setSelectedMedia({ ...selectedMedia, uri: result.uri });
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (error) {
+      console.error("Error applying filter:", error);
+    }
+  };
+
+  const handleSaveToGallery = async () => {
+    if (!selectedMedia) return;
+
+    try {
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Ошибка", "Нужно разрешение на доступ к галерее");
+        return;
+      }
+
+      await MediaLibrary.createAssetAsync(selectedMedia.uri);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert("Успех", "Медиа сохранено в галерею");
+    } catch (error) {
+      console.error("Error saving to gallery:", error);
     }
   };
 

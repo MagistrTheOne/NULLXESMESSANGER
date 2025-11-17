@@ -1,6 +1,6 @@
 import { MessageBubble } from "@/components/MessageBubble";
 import { NeonGlow } from "@/components/NeonGlow";
-import { createMessage, getChatMessages, updateMessage, deleteMessage, forwardMessage, getUserChats } from "@/lib/api/db";
+import { createMessage, getChatMessages, updateMessage, deleteMessage, forwardMessage, getUserChats, createCall } from "@/lib/api/db";
 import { formatTime } from "@/lib/utils/format";
 import { showImagePickerOptions } from "@/lib/utils/imagePicker";
 import { useAuthStore } from "@/stores/authStore";
@@ -189,6 +189,29 @@ export default function ChatScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
       console.error("Error deleting message:", error);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    }
+  };
+
+  const handleCall = async (type: "voice" | "video") => {
+    if (!id || !user?.id) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      await createCall(user.id, id, null, type, "outgoing");
+      
+      // Navigate to video call screen
+      const roomId = `room_${id}_${Date.now()}`;
+      router.push({
+        pathname: "/(main)/call/video",
+        params: {
+          roomId,
+          userId: user.id,
+          userName: user.name || user.phone,
+          isVideo: type === "video" ? "true" : "false",
+        },
+      } as any);
+    } catch (error) {
+      console.error("Error creating call:", error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
   };
