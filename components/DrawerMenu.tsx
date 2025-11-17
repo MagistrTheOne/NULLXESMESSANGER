@@ -64,7 +64,7 @@ export function DrawerMenu() {
           </TouchableOpacity>
         </View>
         <Text className="text-text-primary text-lg font-bold mb-1">
-          {user?.name || "Пользователь"} 👋
+          {user?.name || "Пользователь"} <Text>👋</Text>
         </Text>
         <Text className="text-text-muted text-sm">{user?.phone}</Text>
       </View>
