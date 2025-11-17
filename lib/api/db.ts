@@ -1,5 +1,5 @@
-import { db, users, chats, messages, chatMembers, annaConversations } from "@/db";
-import { eq, desc, and } from "drizzle-orm";
+import { annaConversations, chatMembers, chats, db, messages, users } from "@/db";
+import { desc, eq } from "drizzle-orm";
 
 export async function createUser(phone: string, name?: string) {
   const [user] = await db
@@ -22,10 +22,29 @@ export async function getUserById(id: string) {
   return user;
 }
 
-export async function updateUser(id: string, data: { name?: string; avatar?: string; status?: string }) {
+export async function updateUser(
+  id: string,
+  data: {
+    name?: string;
+    avatar?: string;
+    status?: string;
+    gdprConsent?: boolean;
+    dataProcessingConsent?: boolean;
+    marketingConsent?: boolean;
+    fz152Consent?: boolean;
+    ccpaOptOut?: boolean;
+  }
+) {
+  const updateData: any = { ...data, updatedAt: new Date() };
+  if (data.gdprConsent) {
+    updateData.gdprConsentDate = new Date();
+  }
+  if (data.fz152Consent) {
+    updateData.fz152ConsentDate = new Date();
+  }
   const [updated] = await db
     .update(users)
-    .set({ ...data, updatedAt: new Date() })
+    .set(updateData)
     .where(eq(users.id, id))
     .returning();
   return updated;
@@ -72,7 +91,7 @@ export async function getChatMessages(chatId: string, limit = 50) {
     .limit(limit);
 }
 
-export async function createMessage(chatId: string, userId: string, content: string, type = "text" as const) {
+export async function createMessage(chatId: string, userId: string, content: string, type: "text" | "image" | "voice" | "video" | "file" = "text") {
   const [message] = await db
     .insert(messages)
     .values({

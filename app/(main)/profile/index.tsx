@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { useAuthStore } from "@/stores/authStore";
 import { updateUser } from "@/lib/api/db";
+import { showImagePickerOptions } from "@/lib/utils/imagePicker";
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -34,6 +35,26 @@ export default function ProfileScreen() {
     }
   };
 
+  const handleChangeAvatar = async () => {
+    if (!user?.id) return;
+    
+    const imageUri = await showImagePickerOptions();
+    if (!imageUri) return;
+
+    setLoading(true);
+    try {
+      const updated = await updateUser(user.id, { avatar: imageUri });
+      setUser({
+        ...user,
+        avatar: updated.avatar || undefined,
+      });
+    } catch (error) {
+      console.error("Error updating avatar:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <View className="flex-1 bg-primary">
       <View className="pt-12 pb-4 px-4 bg-secondary/40 border-b border-accent/10 flex-row items-center">
@@ -48,7 +69,9 @@ export default function ProfileScreen() {
           <View className="relative">
             <Avatar uri={user?.avatar} name={user?.name || user?.phone} size={100} showBorder />
             <TouchableOpacity
+              onPress={handleChangeAvatar}
               className="absolute bottom-0 right-0 bg-accent rounded-full p-2 border-2 border-primary"
+              activeOpacity={0.8}
             >
               <Camera size={20} color="#FFFFFF" />
             </TouchableOpacity>

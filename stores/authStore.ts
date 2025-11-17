@@ -1,6 +1,7 @@
+import { deleteAuthToken, setAuthToken } from "@/lib/utils/secureStorage";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface User {
   id: string;
@@ -13,7 +14,7 @@ interface User {
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
-  setUser: (user: User | null) => void;
+  setUser: (user: User | null, token?: string) => void;
   logout: () => void;
 }
 
@@ -22,8 +23,16 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       user: null,
       isAuthenticated: false,
-      setUser: (user) => set({ user, isAuthenticated: !!user }),
-      logout: () => set({ user: null, isAuthenticated: false }),
+      setUser: async (user, token) => {
+        if (user && token) {
+          await setAuthToken(token);
+        }
+        set({ user, isAuthenticated: !!user });
+      },
+      logout: async () => {
+        await deleteAuthToken();
+        set({ user: null, isAuthenticated: false });
+      },
     }),
     {
       name: "auth-storage",

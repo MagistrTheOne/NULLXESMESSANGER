@@ -5,6 +5,13 @@ module.exports = function (api) {
       "babel-preset-expo",
       "nativewind/babel",
     ],
+    plugins: [
+      ["@babel/plugin-transform-modules-commonjs", {
+        allowTopLevelThis: true,
+        loose: true,
+        lazy: false,
+      }],
+    ],
   };
 };
 

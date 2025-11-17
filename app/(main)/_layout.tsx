@@ -1,10 +1,10 @@
-import React, { useEffect } from "react";
-import { Drawer } from "expo-router/drawer";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { useRouter, useSegments } from "expo-router";
 import { DrawerMenu } from "@/components/DrawerMenu";
 import { useAuthStore } from "@/stores/authStore";
 import { useUIStore } from "@/stores/uiStore";
+import { useRouter, useSegments } from "expo-router";
+import { Drawer } from "expo-router/drawer";
+import React, { useEffect } from "react";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 export default function MainLayout() {
   const router = useRouter();
@@ -32,15 +32,13 @@ export default function MainLayout() {
           overlayColor: "rgba(0, 0, 0, 0.5)",
           headerShown: false,
         }}
-        open={drawerOpen}
-        onOpen={() => setDrawerOpen(true)}
-        onClose={() => setDrawerOpen(false)}
       >
         <Drawer.Screen name="chats" options={{ drawerLabel: "Чаты" }} />
         <Drawer.Screen name="chat/[id]" options={{ drawerItemStyle: { display: "none" } }} />
         <Drawer.Screen name="anna" options={{ drawerLabel: "Anna" }} />
         <Drawer.Screen name="profile" options={{ drawerLabel: "Профиль" }} />
         <Drawer.Screen name="settings" options={{ drawerLabel: "Настройки" }} />
+        <Drawer.Screen name="privacy" options={{ drawerItemStyle: { display: "none" } }} />
       </Drawer>
     </GestureHandlerRootView>
   );

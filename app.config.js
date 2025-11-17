@@ -40,6 +40,21 @@ export default {
           },
         },
       ],
+      [
+        "expo-camera",
+        {
+          cameraPermission: "Allow NULLXES to access your camera",
+          microphonePermission: "Allow NULLXES to access your microphone",
+          recordAudioAndroid: true,
+        },
+      ],
+      [
+        "expo-image-picker",
+        {
+          photosPermission: "Allow NULLXES to access your photos",
+        },
+      ],
+      "expo-secure-store",
     ],
     experiments: {
       typedRoutes: true,

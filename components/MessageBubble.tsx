@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text } from "react-native";
+import { View, Text, Image, TouchableOpacity } from "react-native";
 import { Check, CheckCheck } from "phosphor-react-native";
 
 interface MessageBubbleProps {
@@ -8,9 +8,11 @@ interface MessageBubbleProps {
   time?: string;
   isRead?: boolean;
   reactions?: string[];
+  imageUri?: string;
+  type?: "text" | "image" | "voice" | "video" | "file";
 }
 
-export function MessageBubble({ text, isOwn, time, isRead = false, reactions }: MessageBubbleProps) {
+export function MessageBubble({ text, isOwn, time, isRead = false, reactions, imageUri, type = "text" }: MessageBubbleProps) {
   return (
     <View className={`flex-row ${isOwn ? "justify-end" : "justify-start"} mb-2 px-4`}>
       <View
@@ -21,9 +23,21 @@ export function MessageBubble({ text, isOwn, time, isRead = false, reactions }: 
         }`}
         style={isOwn ? { borderBottomRightRadius: 4 } : { borderBottomLeftRadius: 4 }}
       >
-        <Text className={`text-base ${isOwn ? "text-white" : "text-text-primary"}`}>
-          {text}
-        </Text>
+        {type === "image" && imageUri && (
+          <TouchableOpacity className="mb-2 rounded-xl overflow-hidden">
+            <Image
+              source={{ uri: imageUri }}
+              style={{ width: 250, height: 250 }}
+              className="rounded-xl"
+              resizeMode="cover"
+            />
+          </TouchableOpacity>
+        )}
+        {text && (
+          <Text className={`text-base ${isOwn ? "text-white" : "text-text-primary"}`}>
+            {text}
+          </Text>
+        )}
         <View className="flex-row items-center justify-end mt-1">
           {time && (
             <Text className={`text-xs mr-1 ${isOwn ? "text-white/70" : "text-text-muted"}`}>

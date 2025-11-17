@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, FlatList, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ArrowLeft, PaperPlaneTilt, Microphone } from "phosphor-react-native";
+import { ArrowLeft, PaperPlaneTilt, Microphone, Image as ImageIcon } from "phosphor-react-native";
 import { MessageBubble } from "@/components/MessageBubble";
 import { FloatingActionButton } from "@/components/FloatingActionButton";
 import { useMessageStore } from "@/stores/messageStore";
@@ -9,6 +9,7 @@ import { useChatStore } from "@/stores/chatStore";
 import { useAuthStore } from "@/stores/authStore";
 import { getChatMessages, createMessage } from "@/lib/api/db";
 import { formatTime } from "@/lib/utils/format";
+import { showImagePickerOptions } from "@/lib/utils/imagePicker";
 
 export default function ChatScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -69,6 +70,31 @@ export default function ChatScreen() {
     }
   };
 
+  const handlePickImage = async () => {
+    if (!id || !user?.id) return;
+    
+    const imageUri = await showImagePickerOptions();
+    if (!imageUri) return;
+
+    try {
+      const newMessage = await createMessage(id, user.id, imageUri, "image");
+      setMessages(id, [
+        ...messages,
+        {
+          id: newMessage.id,
+          chatId: newMessage.chatId,
+          userId: newMessage.userId,
+          content: newMessage.content,
+          type: newMessage.type as "image",
+          isRead: newMessage.isRead,
+          createdAt: newMessage.createdAt,
+        },
+      ]);
+    } catch (error) {
+      console.error("Error sending image:", error);
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -89,10 +115,12 @@ export default function ChatScreen() {
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <MessageBubble
-            text={item.content}
+            text={item.type === "image" ? "" : item.content}
             isOwn={item.userId === user?.id}
             time={formatTime(item.createdAt)}
             isRead={item.isRead}
+            imageUri={item.type === "image" ? item.content : undefined}
+            type={item.type}
           />
         )}
         contentContainerStyle={{ paddingVertical: 16 }}
@@ -100,6 +128,13 @@ export default function ChatScreen() {
       />
 
       <View className="flex-row items-center px-4 py-3 bg-secondary/40 border-t border-accent/10">
+        <TouchableOpacity
+          onPress={handlePickImage}
+          className="bg-secondary/60 rounded-full p-3 mr-2"
+          activeOpacity={0.8}
+        >
+          <ImageIcon size={20} color="#FFFFFF" />
+        </TouchableOpacity>
         <TextInput
           value={messageText}
           onChangeText={setMessageText}

@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, jsonb, integer, boolean, pgEnum } from "drizzle-orm/pg-core";
+import { boolean, jsonb, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 export const chatTypeEnum = pgEnum("chat_type", ["private", "group", "channel"]);
 
@@ -10,6 +10,14 @@ export const users = pgTable("users", {
   name: text("name"),
   avatar: text("avatar"),
   status: text("status"),
+  gdprConsent: boolean("gdpr_consent").default(false),
+  gdprConsentDate: timestamp("gdpr_consent_date"),
+  dataProcessingConsent: boolean("data_processing_consent").default(false),
+  marketingConsent: boolean("marketing_consent").default(false),
+  fz152Consent: boolean("fz152_consent").default(false),
+  fz152ConsentDate: timestamp("fz152_consent_date"),
+  ccpaOptOut: boolean("ccpa_opt_out").default(false),
+  deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

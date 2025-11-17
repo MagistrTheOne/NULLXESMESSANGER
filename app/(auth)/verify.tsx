@@ -1,17 +1,38 @@
-import React, { useState } from "react";
-import { View, Text, KeyboardAvoidingView, Platform } from "react-native";
-import { useRouter } from "expo-router";
-import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { authenticateWithBiometric, isBiometricAvailable } from "@/lib/utils/biometric";
+import { isBiometricEnabled } from "@/lib/utils/secureStorage";
 import { validateCode } from "@/lib/utils/validation";
 import { useAuthStore } from "@/stores/authStore";
+import { useRouter } from "expo-router";
+import { Fingerprint } from "phosphor-react-native";
+import React, { useEffect, useState } from "react";
+import { KeyboardAvoidingView, Platform, Text, TouchableOpacity, View } from "react-native";
 
 export default function VerifyScreen() {
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
+
+  useEffect(() => {
+    checkBiometric();
+  }, []);
+
+  const checkBiometric = async () => {
+    const available = await isBiometricAvailable();
+    const enabled = await isBiometricEnabled();
+    setBiometricAvailable(available && enabled);
+  };
+
+  const handleBiometricAuth = async () => {
+    const authenticated = await authenticateWithBiometric();
+    if (authenticated) {
+      router.replace("/(main)/chats");
+    }
+  };
 
   const handleVerify = async () => {
     setError("");
@@ -73,6 +94,16 @@ export default function VerifyScreen() {
             disabled={!code}
             className="mt-4"
           />
+
+          {biometricAvailable && (
+            <TouchableOpacity
+              onPress={handleBiometricAuth}
+              className="mt-4 flex-row items-center justify-center"
+            >
+              <Fingerprint size={24} color="#00B7FF" />
+              <Text className="text-accent text-base ml-2">Войти с биометрией</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </KeyboardAvoidingView>

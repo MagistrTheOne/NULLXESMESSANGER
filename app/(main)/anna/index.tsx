@@ -10,7 +10,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { useStream } from "@/hooks/useStream";
 import { streamAnnaResponse } from "@/lib/api/google-ai";
 import { formatTime } from "@/lib/utils/format";
-import * as Clipboard from "expo-clipboard";
+import { Clipboard } from "react-native";
 
 export default function AnnaScreen() {
   const router = useRouter();
@@ -85,8 +85,8 @@ export default function AnnaScreen() {
     }
   };
 
-  const handleCopy = async (text: string) => {
-    await Clipboard.setStringAsync(text);
+  const handleCopy = (text: string) => {
+    Clipboard.setString(text);
   };
 
   const handleRegenerate = async () => {
