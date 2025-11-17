@@ -1,11 +1,13 @@
-import React, { useState } from "react";
-import { View, Text, KeyboardAvoidingView, Platform } from "react-native";
-import { useRouter } from "expo-router";
-import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
-import { validatePhone, formatPhone } from "@/lib/utils/validation";
+import { Input } from "@/components/ui/Input";
+import { createUser, getUserByPhone } from "@/lib/api/db";
+import { generateVerificationCode, storeVerificationCode } from "@/lib/utils/codeVerification";
+import { formatPhone, validatePhone } from "@/lib/utils/validation";
 import { useAuthStore } from "@/stores/authStore";
-import { getUserByPhone, createUser } from "@/lib/api/db";
+import * as Haptics from "expo-haptics";
+import { useRouter } from "expo-router";
+import React, { useState } from "react";
+import { Alert, KeyboardAvoidingView, Platform, Text, View } from "react-native";
 
 export default function PhoneScreen() {
   const [phone, setPhone] = useState("");
@@ -31,6 +33,9 @@ export default function PhoneScreen() {
         user = await createUser(formattedPhone);
       }
 
+      const verificationCode = generateVerificationCode();
+      await storeVerificationCode(formattedPhone, verificationCode);
+
       setUser({
         id: user.id,
         phone: user.phone,
@@ -39,10 +44,17 @@ export default function PhoneScreen() {
         status: user.status || undefined,
       });
 
-      router.push("/(auth)/verify");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      
+      Alert.alert(
+        "Код отправлен",
+        `Код подтверждения: ${verificationCode}\n\n(В продакшене код будет отправлен через SMS)`,
+        [{ text: "OK", onPress: () => router.push("/(auth)/verify") }]
+      );
     } catch (err) {
       setError("Ошибка при входе. Попробуйте снова.");
       console.error(err);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setLoading(false);
     }

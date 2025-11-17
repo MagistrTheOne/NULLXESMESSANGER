@@ -1,16 +1,19 @@
-import React, { useEffect, useState, useRef } from "react";
-import { View, Text, FlatList, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
-import { useRouter } from "expo-router";
-import { ArrowLeft, PaperPlaneTilt, Copy, ArrowClockwise, Star } from "phosphor-react-native";
 import { AnnaAvatar } from "@/components/AnnaAvatar";
+import { FloatingParticles } from "@/components/FloatingParticles";
 import { MessageBubble } from "@/components/MessageBubble";
+import { NeonGlow } from "@/components/NeonGlow";
+import { SpiderWebPattern } from "@/components/SpiderWebPattern";
 import { Button } from "@/components/ui/Button";
-import { useAnnaStore, type AnnaMessage } from "@/stores/annaStore";
-import { useAuthStore } from "@/stores/authStore";
-import { useStream } from "@/hooks/useStream";
 import { streamAnnaResponse } from "@/lib/api/google-ai";
 import { formatTime } from "@/lib/utils/format";
-import { Clipboard } from "react-native";
+import { useAnnaStore, type AnnaMessage } from "@/stores/annaStore";
+import { useAuthStore } from "@/stores/authStore";
+import * as Clipboard from "expo-clipboard";
+import * as Haptics from "expo-haptics";
+import { useRouter } from "expo-router";
+import { ArrowClockwise, ArrowLeft, Copy, PaperPlaneTilt } from "phosphor-react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 export default function AnnaScreen() {
   const router = useRouter();
@@ -42,6 +45,8 @@ export default function AnnaScreen() {
 
   const handleSend = async () => {
     if (!messageText.trim() || !activeConversationId || !user?.id || isGenerating) return;
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
     const userMessage: AnnaMessage = {
       role: "user",
@@ -78,15 +83,20 @@ export default function AnnaScreen() {
 
       addMessage(activeConversationId, modelMessage);
       setCurrentResponse("");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
       console.error("Error getting Anna response:", error);
+      const errorMessage = error instanceof Error ? error.message : "Произошла ошибка при получении ответа";
+      Alert.alert("Ошибка", errorMessage, [{ text: "OK" }]);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const handleCopy = (text: string) => {
-    Clipboard.setString(text);
+  const handleCopy = async (text: string) => {
+    await Clipboard.setStringAsync(text);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
   const handleRegenerate = async () => {
@@ -109,6 +119,9 @@ export default function AnnaScreen() {
       className="flex-1 bg-primary"
       keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
     >
+      <SpiderWebPattern opacity={0.1} color="#0099dd" animated />
+      <FloatingParticles count={15} color="#00B7FF" opacity={0.3} />
+      
       <View className="pt-12 pb-4 px-4 bg-secondary/40 border-b border-accent/10">
         <View className="flex-row items-center justify-between mb-4">
           <TouchableOpacity onPress={() => router.back()} className="mr-4">
@@ -202,18 +215,20 @@ export default function AnnaScreen() {
           maxLength={4096}
           editable={!isGenerating}
         />
-        <TouchableOpacity
-          onPress={handleSend}
-          disabled={!messageText.trim() || isGenerating}
-          className={`rounded-full p-3 ${messageText.trim() && !isGenerating ? "bg-accent" : "bg-secondary/60"}`}
-          activeOpacity={0.8}
-        >
-          <PaperPlaneTilt
-            size={20}
-            color={messageText.trim() && !isGenerating ? "#FFFFFF" : "#6B7280"}
-            weight="fill"
-          />
-        </TouchableOpacity>
+        <NeonGlow color="blue" intensity="medium" animated={messageText.trim() && !isGenerating}>
+          <TouchableOpacity
+            onPress={handleSend}
+            disabled={!messageText.trim() || isGenerating}
+            className={`rounded-full p-3 ${messageText.trim() && !isGenerating ? "bg-accent" : "bg-secondary/60"}`}
+            activeOpacity={0.8}
+          >
+            <PaperPlaneTilt
+              size={20}
+              color={messageText.trim() && !isGenerating ? "#FFFFFF" : "#6B7280"}
+              weight="fill"
+            />
+          </TouchableOpacity>
+        </NeonGlow>
       </View>
     </KeyboardAvoidingView>
   );

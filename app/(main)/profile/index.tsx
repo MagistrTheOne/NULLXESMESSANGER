@@ -1,14 +1,16 @@
-import React, { useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity, Image } from "react-native";
-import { useRouter } from "expo-router";
-import { ArrowLeft, Camera, Pencil } from "phosphor-react-native";
+import { NeonGlow } from "@/components/NeonGlow";
 import { Avatar } from "@/components/ui/Avatar";
-import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { useAuthStore } from "@/stores/authStore";
-import { updateUser } from "@/lib/api/db";
+import { Input } from "@/components/ui/Input";
+import { getUserById, getUserStats, updateUser, updateUserOnlineStatus } from "@/lib/api/db";
 import { showImagePickerOptions } from "@/lib/utils/imagePicker";
+import { useAuthStore } from "@/stores/authStore";
+import * as Haptics from "expo-haptics";
+import { useRouter } from "expo-router";
+import { ArrowLeft, Bookmark, Camera, ChatCircle, Circle, Image as ImageIcon, MessageText } from "phosphor-react-native";
+import React, { useEffect, useState } from "react";
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -17,6 +19,51 @@ export default function ProfileScreen() {
   const [name, setName] = useState(user?.name || "");
   const [status, setStatus] = useState(user?.status || "");
   const [loading, setLoading] = useState(false);
+  const [stats, setStats] = useState({
+    chatsCount: 0,
+    messagesCount: 0,
+    mediaCount: 0,
+    favoritesCount: 0,
+  });
+  const [onlineStatus, setOnlineStatus] = useState<"online" | "offline" | "recently">("offline");
+
+  useEffect(() => {
+    if (user?.id) {
+      loadStats();
+      loadOnlineStatus();
+    }
+  }, [user?.id]);
+
+  const loadOnlineStatus = async () => {
+    if (!user?.id) return;
+    const userData = await getUserById(user.id);
+    if (userData?.onlineStatus) {
+      setOnlineStatus(userData.onlineStatus as "online" | "offline" | "recently");
+    }
+  };
+
+  const handleStatusChange = async (status: "online" | "offline" | "recently") => {
+    if (!user?.id) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      await updateUserOnlineStatus(user.id, status);
+      setOnlineStatus(status);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (error) {
+      console.error("Error updating online status:", error);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    }
+  };
+
+  const loadStats = async () => {
+    if (!user?.id) return;
+    try {
+      const userStats = await getUserStats(user.id);
+      setStats(userStats);
+    } catch (error) {
+      console.error("Error loading stats:", error);
+    }
+  };
 
   const handleSave = async () => {
     if (!user?.id) return;
@@ -93,6 +140,87 @@ export default function ProfileScreen() {
             onChangeText={setStatus}
             placeholder="Введите статус"
           />
+        </Card>
+
+        <Card className="p-4 mb-4">
+          <Text className="text-text-primary text-base font-semibold mb-4">Статистика аккаунта</Text>
+          <View className="flex-row flex-wrap">
+            <View className="w-1/2 mb-4">
+              <NeonGlow color="blue" intensity="low">
+                <View className="bg-secondary/40 rounded-xl p-4 items-center">
+                  <ChatCircle size={32} color="#00B7FF" weight="fill" />
+                  <Text className="text-text-primary text-2xl font-bold mt-2">{stats.chatsCount}</Text>
+                  <Text className="text-text-secondary text-xs mt-1">Чатов</Text>
+                </View>
+              </NeonGlow>
+            </View>
+            <View className="w-1/2 mb-4">
+              <NeonGlow color="blue" intensity="low">
+                <View className="bg-secondary/40 rounded-xl p-4 items-center">
+                  <MessageText size={32} color="#00B7FF" weight="fill" />
+                  <Text className="text-text-primary text-2xl font-bold mt-2">{stats.messagesCount}</Text>
+                  <Text className="text-text-secondary text-xs mt-1">Сообщений</Text>
+                </View>
+              </NeonGlow>
+            </View>
+            <View className="w-1/2">
+              <NeonGlow color="blue" intensity="low">
+                <View className="bg-secondary/40 rounded-xl p-4 items-center">
+                  <ImageIcon size={32} color="#00B7FF" weight="fill" />
+                  <Text className="text-text-primary text-2xl font-bold mt-2">{stats.mediaCount}</Text>
+                  <Text className="text-text-secondary text-xs mt-1">Медиа</Text>
+                </View>
+              </NeonGlow>
+            </View>
+            <View className="w-1/2">
+              <NeonGlow color="blue" intensity="low">
+                <View className="bg-secondary/40 rounded-xl p-4 items-center">
+                  <Bookmark size={32} color="#00B7FF" weight="fill" />
+                  <Text className="text-text-primary text-2xl font-bold mt-2">{stats.favoritesCount}</Text>
+                  <Text className="text-text-secondary text-xs mt-1">Избранное</Text>
+                </View>
+              </NeonGlow>
+            </View>
+          </View>
+        </Card>
+
+        <Card className="p-4 mb-4">
+          <Text className="text-text-primary text-base font-semibold mb-4">Статус</Text>
+          <View className="flex-row gap-2 mb-3">
+            <TouchableOpacity
+              onPress={() => handleStatusChange("online")}
+              className={`flex-1 flex-row items-center justify-center py-3 rounded-xl ${
+                onlineStatus === "online" ? "bg-accent/20 border border-accent" : "bg-secondary/60"
+              }`}
+            >
+              <Circle size={12} color={onlineStatus === "online" ? "#00FF00" : "#6B7280"} weight="fill" />
+              <Text className={`text-sm ml-2 ${onlineStatus === "online" ? "text-accent font-semibold" : "text-text-secondary"}`}>
+                Онлайн
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => handleStatusChange("recently")}
+              className={`flex-1 flex-row items-center justify-center py-3 rounded-xl ${
+                onlineStatus === "recently" ? "bg-accent/20 border border-accent" : "bg-secondary/60"
+              }`}
+            >
+              <Circle size={12} color={onlineStatus === "recently" ? "#FFA500" : "#6B7280"} weight="fill" />
+              <Text className={`text-sm ml-2 ${onlineStatus === "recently" ? "text-accent font-semibold" : "text-text-secondary"}`}>
+                Недавно
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => handleStatusChange("offline")}
+              className={`flex-1 flex-row items-center justify-center py-3 rounded-xl ${
+                onlineStatus === "offline" ? "bg-accent/20 border border-accent" : "bg-secondary/60"
+              }`}
+            >
+              <Circle size={12} color={onlineStatus === "offline" ? "#6B7280" : "#6B7280"} weight="fill" />
+              <Text className={`text-sm ml-2 ${onlineStatus === "offline" ? "text-accent font-semibold" : "text-text-secondary"}`}>
+                Офлайн
+              </Text>
+            </TouchableOpacity>
+          </View>
         </Card>
 
         <Card className="p-4 mb-4">

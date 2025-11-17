@@ -35,8 +35,11 @@ export default function MainLayout() {
       >
         <Drawer.Screen name="chats" options={{ drawerLabel: "Чаты" }} />
         <Drawer.Screen name="chat/[id]" options={{ drawerItemStyle: { display: "none" } }} />
+        <Drawer.Screen name="stories/create" options={{ drawerItemStyle: { display: "none" } }} />
+        <Drawer.Screen name="stories/viewer" options={{ drawerItemStyle: { display: "none" } }} />
         <Drawer.Screen name="anna" options={{ drawerLabel: "Anna" }} />
         <Drawer.Screen name="profile" options={{ drawerLabel: "Профиль" }} />
+        <Drawer.Screen name="favorites" options={{ drawerLabel: "Избранное" }} />
         <Drawer.Screen name="settings" options={{ drawerLabel: "Настройки" }} />
         <Drawer.Screen name="privacy" options={{ drawerItemStyle: { display: "none" } }} />
       </Drawer>

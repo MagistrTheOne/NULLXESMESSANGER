@@ -1,5 +1,5 @@
-import { annaConversations, chatMembers, chats, db, messages, users } from "@/db";
-import { desc, eq } from "drizzle-orm";
+import { annaConversations, calls, chatMembers, chats, contacts, db, favorites, messageReactions, messages, pinnedChats, stories, storyViews, userSessions, users } from "@/db";
+import { and, desc, eq, gt, isNull } from "drizzle-orm";
 
 export async function createUser(phone: string, name?: string) {
   const [user] = await db
@@ -69,17 +69,100 @@ export async function createChat(type: "private" | "group" | "channel", memberId
   return chat;
 }
 
-export async function getUserChats(userId: string) {
+export async function getUserChats(userId: string, includeArchived = false) {
+  const conditions = [eq(chatMembers.userId, userId)];
+  if (!includeArchived) {
+    conditions.push(eq(chats.isArchived, false));
+  }
+  conditions.push(isNull(chats.deletedAt));
+
   const userChats = await db
     .select({
       chat: chats,
     })
     .from(chatMembers)
     .innerJoin(chats, eq(chatMembers.chatId, chats.id))
-    .where(eq(chatMembers.userId, userId))
+    .where(and(...conditions))
     .orderBy(desc(chats.updatedAt));
 
-  return userChats.map((uc) => uc.chat);
+  const chatsWithStatus = await Promise.all(
+    userChats.map(async (uc) => {
+      const chat = uc.chat;
+      if (chat.type === "private") {
+        const otherMember = await db
+          .select({ userId: chatMembers.userId })
+          .from(chatMembers)
+          .where(and(eq(chatMembers.chatId, chat.id), eq(chatMembers.userId, userId)))
+          .limit(1);
+
+        const allMembers = await db
+          .select({ userId: chatMembers.userId })
+          .from(chatMembers)
+          .where(eq(chatMembers.chatId, chat.id));
+
+        const otherUserId = allMembers.find((m) => m.userId !== userId)?.userId;
+        if (otherUserId) {
+          const otherUser = await getUserById(otherUserId);
+          return {
+            ...chat,
+            otherUserOnlineStatus: otherUser?.onlineStatus as "online" | "offline" | "recently" | undefined,
+          };
+        }
+      }
+      return chat;
+    })
+  );
+
+  return chatsWithStatus;
+}
+
+export async function getChatOtherUserStatus(chatId: string, currentUserId: string) {
+  const allMembers = await db
+    .select({ userId: chatMembers.userId })
+    .from(chatMembers)
+    .where(eq(chatMembers.chatId, chatId));
+
+  const otherUserId = allMembers.find((m) => m.userId !== currentUserId)?.userId;
+  if (!otherUserId) return undefined;
+
+  const otherUser = await getUserById(otherUserId);
+  return otherUser?.onlineStatus as "online" | "offline" | "recently" | undefined;
+}
+
+export async function archiveChat(chatId: string) {
+  const [updated] = await db
+    .update(chats)
+    .set({
+      isArchived: true,
+      updatedAt: new Date(),
+    })
+    .where(eq(chats.id, chatId))
+    .returning();
+  return updated;
+}
+
+export async function unarchiveChat(chatId: string) {
+  const [updated] = await db
+    .update(chats)
+    .set({
+      isArchived: false,
+      updatedAt: new Date(),
+    })
+    .where(eq(chats.id, chatId))
+    .returning();
+  return updated;
+}
+
+export async function deleteChat(chatId: string) {
+  const [updated] = await db
+    .update(chats)
+    .set({
+      deletedAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .where(eq(chats.id, chatId))
+    .returning();
+  return updated;
 }
 
 export async function getChatMessages(chatId: string, limit = 50) {
@@ -154,5 +237,376 @@ export async function updateAnnaConversation(id: string, messages: any[], mode?:
     .where(eq(annaConversations.id, id))
     .returning();
   return updated;
+}
+
+export async function addFavorite(
+  userId: string,
+  type: "message" | "media" | "link",
+  messageId?: string,
+  chatId?: string,
+  content?: string,
+  metadata?: any
+) {
+  const [favorite] = await db
+    .insert(favorites)
+    .values({
+      userId,
+      type,
+      messageId,
+      chatId,
+      content,
+      metadata,
+    })
+    .returning();
+  return favorite;
+}
+
+export async function removeFavorite(favoriteId: string) {
+  await db.delete(favorites).where(eq(favorites.id, favoriteId));
+}
+
+export async function getUserFavorites(userId: string, type?: "message" | "media" | "link") {
+  const conditions = [eq(favorites.userId, userId)];
+  if (type) {
+    conditions.push(eq(favorites.type, type));
+  }
+  return await db
+    .select()
+    .from(favorites)
+    .where(and(...conditions))
+    .orderBy(desc(favorites.createdAt));
+}
+
+export async function isMessageFavorite(userId: string, messageId: string) {
+  const [favorite] = await db
+    .select()
+    .from(favorites)
+    .where(and(eq(favorites.userId, userId), eq(favorites.messageId, messageId)))
+    .limit(1);
+  return !!favorite;
+}
+
+export async function pinChat(userId: string, chatId: string) {
+  const existing = await db
+    .select()
+    .from(pinnedChats)
+    .where(and(eq(pinnedChats.userId, userId), eq(pinnedChats.chatId, chatId)))
+    .limit(1);
+
+  if (existing.length > 0) {
+    return existing[0];
+  }
+
+  const maxOrder = await db
+    .select()
+    .from(pinnedChats)
+    .where(eq(pinnedChats.userId, userId))
+    .orderBy(desc(pinnedChats.order))
+    .limit(1);
+
+  const newOrder = maxOrder.length > 0 ? String(parseInt(maxOrder[0].order || "0") + 1) : "1";
+
+  const [pinned] = await db
+    .insert(pinnedChats)
+    .values({
+      userId,
+      chatId,
+      order: newOrder,
+    })
+    .returning();
+  return pinned;
+}
+
+export async function unpinChat(userId: string, chatId: string) {
+  await db
+    .delete(pinnedChats)
+    .where(and(eq(pinnedChats.userId, userId), eq(pinnedChats.chatId, chatId)));
+}
+
+export async function getUserPinnedChats(userId: string) {
+  return await db
+    .select()
+    .from(pinnedChats)
+    .where(eq(pinnedChats.userId, userId))
+    .orderBy(desc(pinnedChats.order));
+}
+
+export async function isChatPinned(userId: string, chatId: string) {
+  const [pinned] = await db
+    .select()
+    .from(pinnedChats)
+    .where(and(eq(pinnedChats.userId, userId), eq(pinnedChats.chatId, chatId)))
+    .limit(1);
+  return !!pinned;
+}
+
+export async function getUserStats(userId: string) {
+  const userChatsList = await getUserChats(userId, true);
+  const chatsCount = userChatsList.length;
+
+  const userMessages = await db
+    .select()
+    .from(messages)
+    .where(eq(messages.userId, userId));
+
+  const messagesCount = userMessages.length;
+  const mediaCount = userMessages.filter(
+    (msg) => msg.type === "image" || msg.type === "video" || msg.type === "file"
+  ).length;
+
+  const userFavoritesList = await getUserFavorites(userId);
+  const favoritesCount = userFavoritesList.length;
+
+  return {
+    chatsCount,
+    messagesCount,
+    mediaCount,
+    favoritesCount,
+  };
+}
+
+export async function createStory(userId: string, mediaUri: string, mediaType: "image" | "video") {
+  const expiresAt = new Date();
+  expiresAt.setHours(expiresAt.getHours() + 24);
+
+  const [story] = await db
+    .insert(stories)
+    .values({
+      userId,
+      mediaUri,
+      mediaType,
+      expiresAt,
+    })
+    .returning();
+  return story;
+}
+
+export async function getUserStories(userId: string) {
+  const now = new Date();
+  return await db
+    .select()
+    .from(stories)
+    .where(and(eq(stories.userId, userId), gt(stories.expiresAt, now)))
+    .orderBy(desc(stories.createdAt));
+}
+
+export async function getActiveStories(userId: string) {
+  const now = new Date();
+  const userChats = await getUserChats(userId);
+  const chatUserIds = new Set<string>();
+  
+  for (const chat of userChats) {
+    if (chat.type === "private") {
+      const members = await db
+        .select({ userId: chatMembers.userId })
+        .from(chatMembers)
+        .where(eq(chatMembers.chatId, chat.id));
+      members.forEach((m) => {
+        if (m.userId !== userId) chatUserIds.add(m.userId);
+      });
+    }
+  }
+  chatUserIds.add(userId);
+
+  const allStories = await db
+    .select()
+    .from(stories)
+    .where(and(gt(stories.expiresAt, now)))
+    .orderBy(desc(stories.createdAt));
+
+  return allStories.filter((s) => chatUserIds.has(s.userId));
+}
+
+export async function viewStory(storyId: string, userId: string) {
+  const existing = await db
+    .select()
+    .from(storyViews)
+    .where(and(eq(storyViews.storyId, storyId), eq(storyViews.userId, userId)))
+    .limit(1);
+
+  if (existing.length > 0) {
+    return existing[0];
+  }
+
+  const [view] = await db
+    .insert(storyViews)
+    .values({
+      storyId,
+      userId,
+    })
+    .returning();
+
+  await db
+    .update(stories)
+    .set({
+      viewsCount: String(parseInt((await db.select().from(stories).where(eq(stories.id, storyId)).limit(1))[0]?.viewsCount || "0") + 1),
+    })
+    .where(eq(stories.id, storyId));
+
+  return view;
+}
+
+export async function createCall(
+  userId: string,
+  chatId: string | null,
+  otherUserId: string | null,
+  type: "voice" | "video",
+  status: "missed" | "incoming" | "outgoing",
+  duration?: string
+) {
+  const [call] = await db
+    .insert(calls)
+    .values({
+      userId,
+      chatId: chatId || null,
+      otherUserId: otherUserId || null,
+      type,
+      status,
+      duration,
+    })
+    .returning();
+  return call;
+}
+
+export async function getUserCalls(userId: string) {
+  return await db
+    .select()
+    .from(calls)
+    .where(eq(calls.userId, userId))
+    .orderBy(desc(calls.createdAt));
+}
+
+export async function addContact(userId: string, contactUserId: string | null, phone: string | null, name?: string, avatar?: string) {
+  const [contact] = await db
+    .insert(contacts)
+    .values({
+      userId,
+      contactUserId: contactUserId || null,
+      phone: phone || null,
+      name,
+      avatar,
+    })
+    .returning();
+  return contact;
+}
+
+export async function getUserContacts(userId: string) {
+  return await db
+    .select()
+    .from(contacts)
+    .where(eq(contacts.userId, userId))
+    .orderBy(desc(contacts.updatedAt));
+}
+
+export async function deleteContact(contactId: string) {
+  await db.delete(contacts).where(eq(contacts.id, contactId));
+}
+
+export async function createUserSession(userId: string, deviceName: string, deviceType: string, ipAddress?: string) {
+  const [session] = await db
+    .insert(userSessions)
+    .values({
+      userId,
+      deviceName,
+      deviceType,
+      ipAddress,
+    })
+    .returning();
+  return session;
+}
+
+export async function getUserSessions(userId: string) {
+  return await db
+    .select()
+    .from(userSessions)
+    .where(eq(userSessions.userId, userId))
+    .orderBy(desc(userSessions.lastActiveAt));
+}
+
+export async function updateMessage(messageId: string, content: string) {
+  const [updated] = await db
+    .update(messages)
+    .set({ content })
+    .where(eq(messages.id, messageId))
+    .returning();
+  return updated;
+}
+
+export async function deleteMessage(messageId: string, deleteForEveryone: boolean) {
+  if (deleteForEveryone) {
+    await db.delete(messages).where(eq(messages.id, messageId));
+  } else {
+    await db
+      .update(messages)
+      .set({ content: "Сообщение удалено", metadata: { deleted: true } })
+      .where(eq(messages.id, messageId));
+  }
+}
+
+export async function forwardMessage(messageId: string, targetChatIds: string[], userId: string) {
+  const [originalMessage] = await db
+    .select()
+    .from(messages)
+    .where(eq(messages.id, messageId))
+    .limit(1);
+
+  if (!originalMessage) return [];
+
+  const forwardedMessages = await Promise.all(
+    targetChatIds.map(async (chatId) => {
+      const [forwarded] = await db
+        .insert(messages)
+        .values({
+          chatId,
+          userId,
+          content: originalMessage.content,
+          type: originalMessage.type,
+          metadata: { ...originalMessage.metadata, forwarded: true, originalMessageId: messageId },
+        })
+        .returning();
+      return forwarded;
+    })
+  );
+
+  return forwardedMessages;
+}
+
+export async function addMessageReaction(messageId: string, userId: string, emoji: string) {
+  const existing = await db
+    .select()
+    .from(messageReactions)
+    .where(and(eq(messageReactions.messageId, messageId), eq(messageReactions.userId, userId)))
+    .limit(1);
+
+  if (existing.length > 0) {
+    await db
+      .update(messageReactions)
+      .set({ emoji })
+      .where(eq(messageReactions.id, existing[0].id));
+    return existing[0];
+  }
+
+  const [reaction] = await db
+    .insert(messageReactions)
+    .values({
+      messageId,
+      userId,
+      emoji,
+    })
+    .returning();
+  return reaction;
+}
+
+export async function removeMessageReaction(messageId: string, userId: string) {
+  await db
+    .delete(messageReactions)
+    .where(and(eq(messageReactions.messageId, messageId), eq(messageReactions.userId, userId)));
+}
+
+export async function getMessageReactions(messageId: string) {
+  return await db
+    .select()
+    .from(messageReactions)
+    .where(eq(messageReactions.messageId, messageId));
 }
 

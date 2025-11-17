@@ -1,9 +1,11 @@
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { authenticateWithBiometric, isBiometricAvailable } from "@/lib/utils/biometric";
-import { isBiometricEnabled } from "@/lib/utils/secureStorage";
+import { clearVerificationCode, verifyCode } from "@/lib/utils/codeVerification";
+import { isBiometricEnabled, setAuthToken } from "@/lib/utils/secureStorage";
 import { validateCode } from "@/lib/utils/validation";
 import { useAuthStore } from "@/stores/authStore";
+import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { Fingerprint } from "phosphor-react-native";
 import React, { useEffect, useState } from "react";
@@ -39,21 +41,33 @@ export default function VerifyScreen() {
     
     if (!validateCode(code)) {
       setError("Введите корректный код");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      return;
+    }
+
+    if (!user?.phone) {
+      setError("Ошибка: номер телефона не найден");
       return;
     }
 
     setLoading(true);
     try {
-      // В реальном приложении здесь была бы проверка кода через API
-      // Для демо просто проверяем длину
-      if (code.length >= 4) {
+      const isValid = await verifyCode(user.phone, code);
+      
+      if (isValid) {
+        await clearVerificationCode();
+        await setAuthToken(`token_${user.id}_${Date.now()}`);
+        await updateUserOnlineStatus(user.id, "online");
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         router.replace("/(main)/chats");
       } else {
-        setError("Неверный код");
+        setError("Неверный код или код истёк");
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       }
     } catch (err) {
       setError("Ошибка при проверке кода");
       console.error(err);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setLoading(false);
     }

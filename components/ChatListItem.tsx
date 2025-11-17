@@ -1,8 +1,8 @@
+import { Check, CheckCheck, Pin } from "phosphor-react-native";
 import React from "react";
-import { View, Text, TouchableOpacity } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
 import { Avatar } from "./ui/Avatar";
 import { Badge } from "./ui/Badge";
-import { Check, CheckCheck, Pin } from "phosphor-react-native";
 
 interface ChatListItemProps {
   id: string;
@@ -13,7 +13,9 @@ interface ChatListItemProps {
   unreadCount?: number;
   isPinned?: boolean;
   isRead?: boolean;
+  onlineStatus?: "online" | "offline" | "recently";
   onPress: () => void;
+  onLongPress?: () => void;
   onSwipeLeft?: () => void;
   onSwipeRight?: () => void;
 }
@@ -26,15 +28,41 @@ export function ChatListItem({
   unreadCount = 0,
   isPinned = false,
   isRead = true,
+  onlineStatus,
   onPress,
+  onLongPress,
 }: ChatListItemProps) {
+  const getStatusColor = () => {
+    switch (onlineStatus) {
+      case "online":
+        return "#00FF00";
+      case "recently":
+        return "#FFA500";
+      default:
+        return undefined;
+    }
+  };
+
   return (
     <TouchableOpacity
       onPress={onPress}
+      onLongPress={onLongPress}
       className="flex-row items-center px-4 py-3 bg-secondary/40 active:bg-secondary/60"
       activeOpacity={0.7}
     >
-      <Avatar uri={avatar} name={name} size={56} showBorder={unreadCount > 0} />
+      <View className="relative">
+        <Avatar uri={avatar} name={name} size={56} showBorder={unreadCount > 0} />
+        {onlineStatus && onlineStatus !== "offline" && (
+          <View
+            className="absolute bottom-0 right-0 rounded-full border-2 border-primary"
+            style={{
+              width: 16,
+              height: 16,
+              backgroundColor: getStatusColor(),
+            }}
+          />
+        )}
+      </View>
       <View className="flex-1 ml-3">
         <View className="flex-row items-center justify-between mb-1">
           <Text className="text-text-primary font-semibold text-base flex-1" numberOfLines={1}>

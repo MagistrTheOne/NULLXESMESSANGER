@@ -10,6 +10,8 @@ export const users = pgTable("users", {
   name: text("name"),
   avatar: text("avatar"),
   status: text("status"),
+  onlineStatus: text("online_status").default("offline"),
+  lastSeen: timestamp("last_seen"),
   gdprConsent: boolean("gdpr_consent").default(false),
   gdprConsentDate: timestamp("gdpr_consent_date"),
   dataProcessingConsent: boolean("data_processing_consent").default(false),
@@ -29,6 +31,8 @@ export const chats = pgTable("chats", {
   avatar: text("avatar"),
   lastMessage: text("last_message"),
   lastMessageAt: timestamp("last_message_at"),
+  isArchived: boolean("is_archived").default(false),
+  deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -67,5 +71,79 @@ export const annaConversations = pgTable("anna_conversations", {
   mode: text("mode").default("normal").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const favoriteTypeEnum = pgEnum("favorite_type", ["message", "media", "link"]);
+
+export const favorites = pgTable("favorites", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  type: favoriteTypeEnum("type").notNull(),
+  messageId: uuid("message_id").references(() => messages.id, { onDelete: "cascade" }),
+  chatId: uuid("chat_id").references(() => chats.id, { onDelete: "cascade" }),
+  content: text("content"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const pinnedChats = pgTable("pinned_chats", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  chatId: uuid("chat_id").references(() => chats.id, { onDelete: "cascade" }).notNull(),
+  order: text("order").default("0"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const stories = pgTable("stories", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  mediaUri: text("media_uri").notNull(),
+  mediaType: text("media_type").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  viewsCount: text("views_count").default("0"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const storyViews = pgTable("story_views", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  storyId: uuid("story_id").references(() => stories.id, { onDelete: "cascade" }).notNull(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  viewedAt: timestamp("viewed_at").defaultNow().notNull(),
+});
+
+export const callTypeEnum = pgEnum("call_type", ["voice", "video"]);
+export const callStatusEnum = pgEnum("call_status", ["missed", "incoming", "outgoing"]);
+
+export const calls = pgTable("calls", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  chatId: uuid("chat_id").references(() => chats.id, { onDelete: "cascade" }),
+  otherUserId: uuid("other_user_id").references(() => users.id, { onDelete: "cascade" }),
+  type: callTypeEnum("type").notNull(),
+  status: callStatusEnum("status").notNull(),
+  duration: text("duration"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const contacts = pgTable("contacts", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  contactUserId: uuid("contact_user_id").references(() => users.id, { onDelete: "cascade" }),
+  phone: text("phone"),
+  name: text("name"),
+  avatar: text("avatar"),
+  syncedFromDevice: boolean("synced_from_device").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const userSessions = pgTable("user_sessions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  deviceName: text("device_name").notNull(),
+  deviceType: text("device_type").notNull(),
+  ipAddress: text("ip_address"),
+  lastActiveAt: timestamp("last_active_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

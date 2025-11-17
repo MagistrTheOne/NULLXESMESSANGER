@@ -1,3 +1,4 @@
+import { getSystemPrompt } from "@/lib/annaSystemPrompt";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import Constants from "expo-constants";
 
@@ -15,39 +16,73 @@ export interface AnnaRequest {
   mode?: "normal" | "tech";
 }
 
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000;
+
+async function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export async function* streamAnnaResponse(request: AnnaRequest): AsyncGenerator<string, void, unknown> {
-  const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+  const mode = request.mode || "normal";
+  const systemPrompt = getSystemPrompt(mode);
+  
+  let retries = 0;
+  let lastError: Error | null = null;
 
-  const systemPrompt = request.mode === "tech"
-    ? "You are Anna, a technical AI assistant. Provide detailed, code-focused responses with technical depth."
-    : "You are Anna, a friendly and helpful AI assistant. Provide clear, concise, and helpful responses.";
+  while (retries < MAX_RETRIES) {
+    try {
+      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
-  const conversationHistory = request.messages.map((msg) => ({
-    role: msg.role === "user" ? "user" : "model",
-    parts: [{ text: msg.content }],
-  }));
+      const conversationHistory = [
+        {
+          role: "user" as const,
+          parts: [{ text: systemPrompt }],
+        },
+        {
+          role: "model" as const,
+          parts: [{ text: "Понял. Я Anna, готова помочь." }],
+        },
+        ...request.messages.slice(0, -1).map((msg) => ({
+          role: msg.role === "user" ? ("user" as const) : ("model" as const),
+          parts: [{ text: msg.content }],
+        })),
+      ];
 
-  const chat = model.startChat({
-    history: conversationHistory.slice(0, -1),
-    generationConfig: {
-      temperature: request.mode === "tech" ? 0.7 : 0.9,
-      topK: 40,
-      topP: 0.95,
-      maxOutputTokens: 2048,
-    },
-  });
+      const chat = model.startChat({
+        history: conversationHistory,
+        generationConfig: {
+          temperature: mode === "tech" ? 0.7 : 0.9,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 2048,
+        },
+      });
 
-  const lastMessage = request.messages[request.messages.length - 1];
-  if (!lastMessage || lastMessage.role !== "user") {
-    return;
-  }
+      const lastMessage = request.messages[request.messages.length - 1];
+      if (!lastMessage || lastMessage.role !== "user") {
+        return;
+      }
 
-  const result = await chat.sendMessageStream(lastMessage.content);
+      const result = await chat.sendMessageStream(lastMessage.content);
 
-  for await (const chunk of result.stream) {
-    const chunkText = chunk.text();
-    if (chunkText) {
-      yield chunkText;
+      for await (const chunk of result.stream) {
+        const chunkText = chunk.text();
+        if (chunkText) {
+          yield chunkText;
+        }
+      }
+
+      return;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      retries++;
+
+      if (retries < MAX_RETRIES) {
+        await delay(RETRY_DELAY * retries);
+      } else {
+        throw new Error(`Failed to get Anna response after ${MAX_RETRIES} retries: ${lastError.message}`);
+      }
     }
   }
 }

@@ -8,6 +8,8 @@ interface Chat {
   lastMessage?: string;
   lastMessageAt?: Date;
   unreadCount?: number;
+  isPinned?: boolean;
+  onlineStatus?: "online" | "offline" | "recently";
 }
 
 interface ChatState {

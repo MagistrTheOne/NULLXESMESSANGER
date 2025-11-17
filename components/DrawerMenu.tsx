@@ -1,24 +1,24 @@
-import React from "react";
-import { View, Text, TouchableOpacity, ScrollView } from "react-native";
-import { useRouter } from "expo-router";
-import {
-  User,
-  Smiley,
-  Wallet,
-  Users,
-  AddressBook,
-  Phone,
-  Bookmark,
-  Gear,
-  UserPlus,
-  Question,
-  Sparkle,
-  Sun,
-  Moon,
-} from "phosphor-react-native";
-import { Avatar } from "./ui/Avatar";
 import { useAuthStore } from "@/stores/authStore";
 import { useUIStore } from "@/stores/uiStore";
+import { useRouter } from "expo-router";
+import {
+  AddressBook,
+  Bookmark,
+  Gear,
+  Moon,
+  Phone,
+  Question,
+  Smiley,
+  Sparkle,
+  Sun,
+  User,
+  UserPlus,
+  Users,
+  Wallet,
+} from "phosphor-react-native";
+import React from "react";
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { Avatar } from "./ui/Avatar";
 
 export function DrawerMenu() {
   const router = useRouter();
@@ -34,7 +34,7 @@ export function DrawerMenu() {
     { icon: Users, label: "Создать группу", route: null },
     { icon: AddressBook, label: "Контакты", route: null },
     { icon: Phone, label: "Звонки", route: null },
-    { icon: Bookmark, label: "Избранное", route: null },
+    { icon: Bookmark, label: "Избранное", route: "/(main)/favorites" },
     { icon: Gear, label: "Настройки", route: "/(main)/settings" },
     { icon: UserPlus, label: "Пригласить друзей", route: null },
     { icon: Question, label: "Возможности Telegram", route: null },
