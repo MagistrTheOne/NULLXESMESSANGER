@@ -29,15 +29,15 @@ export function DrawerMenu() {
 
   const menuItems = [
     { icon: User, label: "Мой профиль", route: "/(main)/profile" },
-    { icon: Smiley, label: "Сменить статус", route: null },
-    { icon: Wallet, label: "Кошелёк", route: null },
-    { icon: Users, label: "Создать группу", route: null },
-    { icon: AddressBook, label: "Контакты", route: null },
-    { icon: Phone, label: "Звонки", route: null },
+    { icon: Smiley, label: "Сменить статус", route: "/(main)/profile" },
+    { icon: Wallet, label: "Кошелёк", route: "/(main)/wallet" },
+    { icon: Users, label: "Создать группу", route: "/(main)/chats/new" },
+    { icon: AddressBook, label: "Контакты", route: "/(main)/contacts" },
+    { icon: Phone, label: "Звонки", route: "/(main)/calls" },
     { icon: Bookmark, label: "Избранное", route: "/(main)/favorites" },
     { icon: Gear, label: "Настройки", route: "/(main)/settings" },
-    { icon: UserPlus, label: "Пригласить друзей", route: null },
-    { icon: Question, label: "Возможности Telegram", route: null },
+    { icon: UserPlus, label: "Пригласить друзей", route: "/(main)/invite" },
+    { icon: Question, label: "Возможности Telegram", route: "/(main)/features" },
   ];
 
   const handleNavigate = (route: string | null) => {

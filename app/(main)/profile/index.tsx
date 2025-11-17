@@ -225,7 +225,10 @@ export default function ProfileScreen() {
 
         <Card className="p-4 mb-4">
           <Text className="text-text-primary text-base font-semibold mb-4">Управление устройствами</Text>
-          <TouchableOpacity className="py-3 border-b border-accent/10">
+          <TouchableOpacity
+            onPress={() => router.push("/profile/sessions" as any)}
+            className="py-3 border-b border-accent/10"
+          >
             <Text className="text-text-secondary">Активные сессии</Text>
           </TouchableOpacity>
         </Card>

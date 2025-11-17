@@ -9,7 +9,7 @@ import { useMessageStore } from "@/stores/messageStore";
 import { useVoiceRecorder } from "@/hooks/useVoiceRecorder";
 import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ArrowLeft, CaretDown, Image as ImageIcon, Microphone, PaperPlaneTilt, X } from "phosphor-react-native";
+import { ArrowLeft, CaretDown, Image as ImageIcon, Microphone, PaperPlaneTilt, Phone, VideoCamera, X } from "phosphor-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import { FlatList, KeyboardAvoidingView, Platform, Text, TextInput, TouchableOpacity, View, Alert, Modal } from "react-native";
 
@@ -230,6 +230,18 @@ export default function ChatScreen() {
         <Text className="text-text-primary text-lg font-semibold flex-1">
           {chat?.name || "Чат"}
         </Text>
+        <TouchableOpacity
+          onPress={() => handleCall("voice")}
+          className="ml-2 p-2"
+        >
+          <Phone size={20} color="#FFFFFF" />
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => handleCall("video")}
+          className="ml-2 p-2"
+        >
+          <VideoCamera size={20} color="#FFFFFF" />
+        </TouchableOpacity>
       </View>
 
       <FlatList

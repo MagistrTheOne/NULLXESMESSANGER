@@ -59,12 +59,13 @@ export async function updateUserOnlineStatus(id: string, status: "online" | "off
   return updated;
 }
 
-export async function createChat(type: "private" | "group" | "channel", memberIds: string[], name?: string) {
+export async function createChat(type: "private" | "group" | "channel", memberIds: string[], name?: string, avatar?: string) {
   const [chat] = await db
     .insert(chats)
     .values({
       type,
       name,
+      avatar,
     })
     .returning();
 
