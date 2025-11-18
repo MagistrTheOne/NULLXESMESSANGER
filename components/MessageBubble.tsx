@@ -2,10 +2,11 @@ import { addFavorite, addMessageReaction, getMessageReactions, getUserFavorites,
 import { useAuthStore } from "@/stores/authStore";
 import { useFavoritesStore } from "@/stores/favoritesStore";
 import * as Haptics from "expo-haptics";
-import { ArrowRight, ArrowUUpLeft, Check, Pencil, Smiley, Star, Trash } from "phosphor-react-native";
+import { ArrowRight, Check, Pencil, Smiley, Star, Trash } from "phosphor-react-native";
 import React, { useEffect, useState } from "react";
 import { Alert, Image, Text, TouchableOpacity, View } from "react-native";
 import { EmojiPicker } from "./EmojiPicker";
+import { FileMessage } from "./FileMessage";
 import { VoiceMessage } from "./VoiceMessage";
 
 interface MessageBubbleProps {
@@ -233,7 +234,15 @@ export function MessageBubble({
         {type === "voice" && (
           <VoiceMessage uri={text} isOwn={isOwn} />
         )}
-        {text && type !== "voice" && (
+        {type === "file" && (
+          <FileMessage
+            uri={text}
+            isOwn={isOwn}
+            messageId={messageId}
+            chatId={chatId}
+          />
+        )}
+        {text && type !== "voice" && type !== "file" && (
           <Text className={`text-base ${isOwn ? "text-white" : "text-text-primary"}`}>
             {searchQuery && text.toLowerCase().includes(searchQuery.toLowerCase()) ? (
               <Text>
@@ -271,11 +280,14 @@ export function MessageBubble({
             </Text>
           )}
           {isOwn && (
-            isRead ? (
-              <Check size={14} color="#FFFFFF" weight="fill" />
-            ) : (
+            <View className="flex-row items-center">
               <Check size={14} color="#FFFFFF" />
-            )
+              {isRead ? (
+                <Check size={14} color="#00B7FF" weight="fill" style={{ marginLeft: -4 }} />
+              ) : (
+                <Check size={14} color="#FFFFFF" style={{ marginLeft: -4 }} />
+              )}
+            </View>
           )}
         </View>
         {messageReactions.length > 0 && (

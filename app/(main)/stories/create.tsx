@@ -16,6 +16,7 @@ export default function CreateStoryScreen() {
   const [selectedMedia, setSelectedMedia] = useState<{ uri: string; type: "image" | "video" } | null>(null);
   const [loading, setLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [privacy, setPrivacy] = useState<"public" | "contacts" | "close_friends" | "custom">("public");
 
   const handlePickMedia = async (type: "image" | "video") => {
     try {
@@ -137,7 +138,7 @@ export default function CreateStoryScreen() {
 
     setLoading(true);
     try {
-      await createStory(user.id, selectedMedia.uri, selectedMedia.type);
+      await createStory(user.id, selectedMedia.uri, selectedMedia.type, privacy);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.back();
     } catch (error) {
@@ -181,6 +182,35 @@ export default function CreateStoryScreen() {
               useNativeControls
             />
           )}
+          <View className="mt-6 w-full px-4">
+            <Text className="text-text-primary text-base font-semibold mb-3">Приватность</Text>
+            <View className="flex-row flex-wrap gap-2">
+              {(["public", "contacts", "close_friends"] as const).map((privacyOption) => (
+                <TouchableOpacity
+                  key={privacyOption}
+                  onPress={() => {
+                    setPrivacy(privacyOption);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }}
+                  className={`px-4 py-2 rounded-lg border ${
+                    privacy === privacyOption
+                      ? "bg-accent border-accent"
+                      : "bg-secondary/40 border-accent/10"
+                  }`}
+                >
+                  <Text
+                    className={`text-sm font-semibold ${
+                      privacy === privacyOption ? "text-white" : "text-text-secondary"
+                    }`}
+                  >
+                    {privacyOption === "public" && "Все"}
+                    {privacyOption === "contacts" && "Контакты"}
+                    {privacyOption === "close_friends" && "Близкие друзья"}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
           <TouchableOpacity
             onPress={() => setSelectedMedia(null)}
             className="mt-4 bg-danger/20 px-6 py-3 rounded-full"
@@ -189,6 +219,36 @@ export default function CreateStoryScreen() {
           </TouchableOpacity>
         </View>
       ) : (
+        <View className="flex-1 items-center justify-center px-6">
+          <View className="flex-row gap-4 mb-8">
+            <TouchableOpacity
+              onPress={() => handlePickMedia("image")}
+              className="bg-secondary/60 p-6 rounded-2xl items-center"
+            >
+              <ImageIcon size={48} color="#00B7FF" />
+              <Text className="text-text-primary mt-4 font-semibold">Фото</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => handlePickMedia("video")}
+              className="bg-secondary/60 p-6 rounded-2xl items-center"
+            >
+              <Camera size={48} color="#00B7FF" />
+              <Text className="text-text-primary mt-4 font-semibold">Видео</Text>
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity
+            onPress={handleTakePhoto}
+            className="bg-accent px-8 py-4 rounded-full"
+          >
+            <Text className="text-white font-semibold text-lg">Сделать фото</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </View>
+  );
+}
+
+
         <View className="flex-1 items-center justify-center px-6">
           <View className="flex-row gap-4 mb-8">
             <TouchableOpacity

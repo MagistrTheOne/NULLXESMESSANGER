@@ -15,10 +15,15 @@ export class ZegoCallManager {
   private engine: ZegoExpressEngine | null = null;
   private appID: number;
   private appSign: string;
+  private onRemoteStreamUpdate?: (streamID: string | null) => void;
 
   constructor(appID: number, appSign: string) {
     this.appID = appID;
     this.appSign = appSign;
+  }
+
+  setOnRemoteStreamUpdate(callback: (streamID: string | null) => void) {
+    this.onRemoteStreamUpdate = callback;
   }
 
   async initialize() {
@@ -59,6 +64,17 @@ export class ZegoCallManager {
 
       this.engine.on("roomStreamUpdate", (roomID: string, updateType: number, streamList: any[]) => {
         console.log("Room stream update:", roomID, updateType, streamList);
+        // updateType: 0 = Add, 1 = Delete
+        if (updateType === 0 && streamList.length > 0) {
+          // Новый поток появился - начинаем воспроизведение
+          const remoteStream = streamList.find((stream: any) => stream.streamID && !stream.streamID.includes("local"));
+          if (remoteStream && this.onRemoteStreamUpdate) {
+            this.onRemoteStreamUpdate(remoteStream.streamID);
+          }
+        } else if (updateType === 1 && this.onRemoteStreamUpdate) {
+          // Поток удален
+          this.onRemoteStreamUpdate(null);
+        }
       });
     } catch (error) {
       console.error("Error initializing ZEGO engine:", error);
@@ -92,15 +108,20 @@ export class ZegoCallManager {
     await this.engine.logoutRoom(roomID);
   }
 
-  async startPublishingStream(streamID: string, video: boolean = true) {
+  async startPublishingStream(streamID: string, video: boolean = true, view?: any) {
     if (Platform.OS === "web" || !this.engine) return;
 
     // startPublishingStream(streamID, channel?, config?)
     // ZegoPublishChannel.Main = 0
-    const config = {
+    const config: any = {
       video: video,
       audio: true,
     };
+
+    // Если передан view, добавляем его в config
+    if (view) {
+      config.view = view;
+    }
 
     return await this.engine.startPublishingStream(streamID, 0, config); // 0 = Main channel
   }

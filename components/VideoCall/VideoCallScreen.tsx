@@ -1,10 +1,20 @@
 import { useVideoCall } from "@/hooks/useVideoCall";
 import { useAuthStore } from "@/stores/authStore";
-import { useRouter, useLocalSearchParams } from "expo-router";
-import { PhoneSlash, VideoCamera, VideoCameraSlash, Microphone, MicrophoneSlash, CameraRotate } from "phosphor-react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { CameraRotate, Microphone, MicrophoneSlash, PhoneSlash, VideoCamera, VideoCameraSlash } from "phosphor-react-native";
 import React, { useEffect } from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-// ZEGO View component - will be imported dynamically
+import { Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+
+// ZEGO View component - динамический импорт для нативных платформ
+let ZegoView: any = null;
+if (Platform.OS !== "web") {
+  try {
+    const zegoModule = require("zego-express-engine-reactnative");
+    ZegoView = zegoModule.ZegoView || zegoModule.default?.ZegoView;
+  } catch (e) {
+    console.warn("ZEGO View component not available");
+  }
+}
 
 export default function VideoCallScreen() {
   const router = useRouter();
@@ -44,8 +54,17 @@ export default function VideoCallScreen() {
       <View className="flex-1">
         {callState.remoteStreamID ? (
           <View style={StyleSheet.absoluteFill} ref={remoteViewRef}>
-            {/* ZEGO View will be rendered here */}
-            <Text className="text-text-primary">Remote video stream</Text>
+            {ZegoView && Platform.OS !== "web" ? (
+              <ZegoView
+                style={StyleSheet.absoluteFill}
+                zOrder={0}
+                objectFit="cover"
+              />
+            ) : (
+              <View className="flex-1 items-center justify-center bg-secondary/40">
+                <Text className="text-text-primary">Удалённое видео</Text>
+              </View>
+            )}
           </View>
         ) : (
           <View className="flex-1 items-center justify-center bg-secondary/40">
@@ -58,8 +77,17 @@ export default function VideoCallScreen() {
       {callState.isVideoEnabled && callState.localStreamID && (
         <View className="absolute top-12 right-4 w-32 h-48 rounded-xl overflow-hidden border-2 border-accent bg-secondary/60">
           <View style={StyleSheet.absoluteFill} ref={localViewRef}>
-            {/* ZEGO View will be rendered here */}
-            <Text className="text-text-primary text-xs">Local video</Text>
+            {ZegoView && Platform.OS !== "web" ? (
+              <ZegoView
+                style={StyleSheet.absoluteFill}
+                zOrder={1}
+                objectFit="cover"
+              />
+            ) : (
+              <View className="flex-1 items-center justify-center">
+                <Text className="text-text-primary text-xs">Локальное видео</Text>
+              </View>
+            )}
           </View>
         </View>
       )}

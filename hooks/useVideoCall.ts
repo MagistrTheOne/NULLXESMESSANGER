@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from "react";
 import { getZegoManager } from "@/lib/api/zegocloud";
 import * as Haptics from "expo-haptics";
+import { useEffect, useRef, useState } from "react";
+import { Platform } from "react-native";
 
 export interface CallState {
   isConnected: boolean;
@@ -25,7 +26,42 @@ export function useVideoCall(roomID: string, userID: string, userName: string) {
   const localViewRef = useRef<any>(null);
   const remoteViewRef = useRef<any>(null);
 
+  const handleEndCall = async () => {
+    try {
+      // Используем функциональное обновление для получения актуального состояния
+      setCallState((prev) => {
+        if (prev.localStreamID) {
+          zegoManagerRef.current.stopPublishingStream(prev.localStreamID).catch(console.error);
+        }
+        if (prev.remoteStreamID) {
+          zegoManagerRef.current.stopPlayingStream(prev.remoteStreamID).catch(console.error);
+        }
+        zegoManagerRef.current.leaveRoom(roomID).catch(console.error);
+        return {
+          isConnected: false,
+          isVideoEnabled: false,
+          isAudioEnabled: false,
+          isFrontCamera: true,
+          remoteStreamID: null,
+          localStreamID: null,
+        };
+      });
+
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (error) {
+      console.error("Error ending call:", error);
+    }
+  };
+
   useEffect(() => {
+    // Устанавливаем callback для обновления remote stream
+    zegoManagerRef.current.setOnRemoteStreamUpdate((streamID: string | null) => {
+      setCallState((prev) => ({ ...prev, remoteStreamID: streamID }));
+      if (streamID && remoteViewRef.current) {
+        zegoManagerRef.current.startPlayingStream(streamID, remoteViewRef.current);
+      }
+    });
+
     return () => {
       // Cleanup при размонтировании
       handleEndCall();
@@ -45,7 +81,13 @@ export function useVideoCall(roomID: string, userID: string, userName: string) {
       await zegoManagerRef.current.joinRoom(roomID, userID, userName);
 
       const streamID = `stream_${userID}_${Date.now()}`;
-      await zegoManagerRef.current.startPublishingStream(streamID, video);
+      
+      // Начинаем публикацию локального потока
+      if (localViewRef.current) {
+        await zegoManagerRef.current.startPublishingStream(streamID, video, localViewRef.current);
+      } else {
+        await zegoManagerRef.current.startPublishingStream(streamID, video);
+      }
 
       setCallState((prev) => ({
         ...prev,
@@ -62,30 +104,6 @@ export function useVideoCall(roomID: string, userID: string, userName: string) {
     }
   };
 
-  const handleEndCall = async () => {
-    try {
-      if (callState.localStreamID) {
-        await zegoManagerRef.current.stopPublishingStream(callState.localStreamID);
-      }
-      if (callState.remoteStreamID) {
-        await zegoManagerRef.current.stopPlayingStream(callState.remoteStreamID);
-      }
-      await zegoManagerRef.current.leaveRoom(roomID);
-
-      setCallState({
-        isConnected: false,
-        isVideoEnabled: false,
-        isAudioEnabled: false,
-        isFrontCamera: true,
-        remoteStreamID: null,
-        localStreamID: null,
-      });
-
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch (error) {
-      console.error("Error ending call:", error);
-    }
-  };
 
   const toggleVideo = async () => {
     try {

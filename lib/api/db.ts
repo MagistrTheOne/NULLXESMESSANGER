@@ -1,5 +1,5 @@
-import { annaConversations, calls, chatMembers, chats, contacts, db, favorites, messageReactions, messages, pinnedChats, stories, storyViews, userSessions, users } from "@/db";
-import { and, desc, eq, gt, isNull, or } from "drizzle-orm";
+import { annaConversations, blockedUsers, calls, chatMembers, chats, contacts, db, favorites, messageReactions, messages, pinnedChats, searchHistory, stories, storyViews, userSessions, users } from "@/db";
+import { and, desc, eq, gt, gte, isNull, lte, or } from "drizzle-orm";
 
 export async function createUser(phone: string, name?: string) {
   const [user] = await db
@@ -201,6 +201,131 @@ export async function getChatMedia(chatId: string) {
     .orderBy(desc(messages.createdAt));
 }
 
+export async function getMessageById(messageId: string) {
+  const [message] = await db
+    .select()
+    .from(messages)
+    .where(eq(messages.id, messageId))
+    .limit(1);
+  return message;
+}
+
+export async function searchMessages(userId: string, query: string, filters?: {
+  chatId?: string;
+  senderId?: string;
+  messageType?: "text" | "image" | "voice" | "video" | "file";
+  dateFrom?: Date;
+  dateTo?: Date;
+}) {
+  const userChats = await getUserChats(userId, true);
+  const chatIds = userChats.map((chat) => chat.id);
+
+  if (chatIds.length === 0) return [];
+
+  let conditions: any[] = [
+    or(...chatIds.map((id) => eq(messages.chatId, id))),
+  ];
+
+  if (filters?.chatId) {
+    conditions.push(eq(messages.chatId, filters.chatId));
+  }
+
+  if (filters?.senderId) {
+    conditions.push(eq(messages.userId, filters.senderId));
+  }
+
+  if (filters?.messageType) {
+    conditions.push(eq(messages.type, filters.messageType));
+  }
+
+  if (filters?.dateFrom) {
+    conditions.push(gte(messages.createdAt, filters.dateFrom));
+  }
+
+  if (filters?.dateTo) {
+    conditions.push(lte(messages.createdAt, filters.dateTo));
+  }
+
+  const allMessages = await db
+    .select()
+    .from(messages)
+    .where(and(...conditions))
+    .orderBy(desc(messages.createdAt))
+    .limit(500);
+
+  const queryLower = query.toLowerCase();
+  return allMessages.filter((msg) => {
+    if (msg.type === "text" || msg.type === "file") {
+      return msg.content.toLowerCase().includes(queryLower);
+    }
+    return false;
+  });
+}
+
+export async function searchContacts(userId: string, query: string) {
+  const userContacts = await getUserContacts(userId);
+  const queryLower = query.toLowerCase();
+  
+  return userContacts.filter((contact) => {
+    return (
+      contact.name?.toLowerCase().includes(queryLower) ||
+      contact.phone?.toLowerCase().includes(queryLower)
+    );
+  });
+}
+
+export async function searchMedia(userId: string, query: string, filters?: {
+  chatId?: string;
+  mediaType?: "image" | "video" | "file";
+  dateFrom?: Date;
+  dateTo?: Date;
+}) {
+  const userChats = await getUserChats(userId, true);
+  const chatIds = userChats.map((chat) => chat.id);
+
+  if (chatIds.length === 0) return [];
+
+  let conditions: any[] = [
+    or(...chatIds.map((id) => eq(messages.chatId, id))),
+    or(
+      eq(messages.type, "image"),
+      eq(messages.type, "video"),
+      eq(messages.type, "file")
+    ),
+  ];
+
+  if (filters?.chatId) {
+    conditions.push(eq(messages.chatId, filters.chatId));
+  }
+
+  if (filters?.mediaType) {
+    conditions.push(eq(messages.type, filters.mediaType));
+  }
+
+  if (filters?.dateFrom) {
+    conditions.push(gte(messages.createdAt, filters.dateFrom));
+  }
+
+  if (filters?.dateTo) {
+    conditions.push(lte(messages.createdAt, filters.dateTo));
+  }
+
+  const allMedia = await db
+    .select()
+    .from(messages)
+    .where(and(...conditions))
+    .orderBy(desc(messages.createdAt))
+    .limit(500);
+
+  const queryLower = query.toLowerCase();
+  return allMedia.filter((msg) => {
+    if (msg.type === "file") {
+      return msg.content.toLowerCase().includes(queryLower);
+    }
+    return true;
+  });
+}
+
 export async function createMessage(
   chatId: string,
   userId: string,
@@ -228,15 +353,6 @@ export async function createMessage(
     })
     .where(eq(chats.id, chatId));
 
-  return message;
-}
-
-export async function getMessageById(messageId: string) {
-  const [message] = await db
-    .select()
-    .from(messages)
-    .where(eq(messages.id, messageId))
-    .limit(1);
   return message;
 }
 
@@ -408,7 +524,13 @@ export async function getUserStats(userId: string) {
   };
 }
 
-export async function createStory(userId: string, mediaUri: string, mediaType: "image" | "video") {
+export async function createStory(
+  userId: string,
+  mediaUri: string,
+  mediaType: "image" | "video",
+  privacy: "public" | "contacts" | "close_friends" | "custom" = "public",
+  allowedUserIds: string[] = []
+) {
   const expiresAt = new Date();
   expiresAt.setHours(expiresAt.getHours() + 24);
 
@@ -419,6 +541,8 @@ export async function createStory(userId: string, mediaUri: string, mediaType: "
       mediaUri,
       mediaType,
       expiresAt,
+      privacy,
+      allowedUserIds: allowedUserIds.length > 0 ? allowedUserIds : [],
     })
     .returning();
   return story;
@@ -457,7 +581,25 @@ export async function getActiveStories(userId: string) {
     .where(and(gt(stories.expiresAt, now)))
     .orderBy(desc(stories.createdAt));
 
-  return allStories.filter((s) => chatUserIds.has(s.userId));
+  const userContacts = await getUserContacts(userId);
+  const contactUserIds = new Set(userContacts.map((c) => c.contactUserId).filter(Boolean) as string[]);
+
+  return allStories.filter((s) => {
+    if (s.userId === userId) return true;
+    if (!chatUserIds.has(s.userId)) return false;
+
+    if (s.privacy === "public") return true;
+    if (s.privacy === "contacts" && contactUserIds.has(s.userId)) return true;
+    if (s.privacy === "close_friends") {
+      // TODO: Implement close friends list
+      return contactUserIds.has(s.userId);
+    }
+    if (s.privacy === "custom") {
+      const allowedIds = (s.allowedUserIds as string[]) || [];
+      return allowedIds.includes(userId);
+    }
+    return false;
+  });
 }
 
 export async function viewStory(storyId: string, userId: string) {
@@ -538,11 +680,70 @@ export async function getUserContacts(userId: string) {
     .select()
     .from(contacts)
     .where(eq(contacts.userId, userId))
-    .orderBy(desc(contacts.updatedAt));
+    .orderBy(desc(contacts.isFavorite), desc(contacts.updatedAt));
 }
 
 export async function deleteContact(contactId: string) {
   await db.delete(contacts).where(eq(contacts.id, contactId));
+}
+
+export async function toggleFavoriteContact(contactId: string, isFavorite: boolean) {
+  const [updated] = await db
+    .update(contacts)
+    .set({ isFavorite, updatedAt: new Date() })
+    .where(eq(contacts.id, contactId))
+    .returning();
+  return updated;
+}
+
+export async function blockUser(userId: string, blockedUserId: string) {
+  const existing = await db
+    .select()
+    .from(blockedUsers)
+    .where(and(eq(blockedUsers.userId, userId), eq(blockedUsers.blockedUserId, blockedUserId)))
+    .limit(1);
+
+  if (existing.length > 0) {
+    return existing[0];
+  }
+
+  const [blocked] = await db
+    .insert(blockedUsers)
+    .values({
+      userId,
+      blockedUserId,
+    })
+    .returning();
+  return blocked;
+}
+
+export async function unblockUser(userId: string, blockedUserId: string) {
+  await db
+    .delete(blockedUsers)
+    .where(and(eq(blockedUsers.userId, userId), eq(blockedUsers.blockedUserId, blockedUserId)));
+}
+
+export async function getBlockedUsers(userId: string) {
+  return await db
+    .select({
+      id: blockedUsers.id,
+      blockedUserId: blockedUsers.blockedUserId,
+      createdAt: blockedUsers.createdAt,
+      user: users,
+    })
+    .from(blockedUsers)
+    .innerJoin(users, eq(blockedUsers.blockedUserId, users.id))
+    .where(eq(blockedUsers.userId, userId))
+    .orderBy(desc(blockedUsers.createdAt));
+}
+
+export async function isUserBlocked(userId: string, otherUserId: string) {
+  const [blocked] = await db
+    .select()
+    .from(blockedUsers)
+    .where(and(eq(blockedUsers.userId, userId), eq(blockedUsers.blockedUserId, otherUserId)))
+    .limit(1);
+  return !!blocked;
 }
 
 export async function createUserSession(userId: string, deviceName: string, deviceType: string, ipAddress?: string) {
@@ -654,5 +855,76 @@ export async function getMessageReactions(messageId: string) {
     .select()
     .from(messageReactions)
     .where(eq(messageReactions.messageId, messageId));
+}
+
+export async function addSearchHistory(userId: string, query: string, tab: string = "all") {
+  if (!query.trim()) return;
+  
+  await db.insert(searchHistory).values({
+    userId,
+    query: query.trim(),
+    tab,
+  });
+}
+
+export async function getSearchHistory(userId: string, limit: number = 10) {
+  return await db
+    .select()
+    .from(searchHistory)
+    .where(eq(searchHistory.userId, userId))
+    .orderBy(desc(searchHistory.createdAt))
+    .limit(limit);
+}
+
+export async function deleteSearchHistory(userId: string, historyId?: string) {
+  if (historyId) {
+    await db.delete(searchHistory).where(and(eq(searchHistory.id, historyId), eq(searchHistory.userId, userId)));
+  } else {
+    await db.delete(searchHistory).where(eq(searchHistory.userId, userId));
+  }
+}
+
+export async function replyToStory(storyId: string, userId: string, message: string) {
+  const [story] = await db.select().from(stories).where(eq(stories.id, storyId)).limit(1);
+  if (!story) throw new Error("Story not found");
+
+  const storyOwnerId = story.userId;
+  
+  // Find or create private chat with story owner
+  const userChats = await getUserChats(userId, true);
+  let chatId: string | null = null;
+
+  for (const chat of userChats) {
+    if (chat.type === "private") {
+      const members = await db
+        .select({ userId: chatMembers.userId })
+        .from(chatMembers)
+        .where(eq(chatMembers.chatId, chat.id));
+      const memberIds = members.map((m) => m.userId);
+      if (memberIds.includes(userId) && memberIds.includes(storyOwnerId)) {
+        chatId = chat.id;
+        break;
+      }
+    }
+  }
+
+  if (!chatId) {
+    const newChat = await createChat("private", [userId, storyOwnerId]);
+    chatId = newChat.id;
+  }
+
+  // Create message with story reference
+  const [replyMessage] = await db
+    .insert(messages)
+    .values({
+      chatId,
+      userId,
+      content: message,
+      type: "text",
+      metadata: { storyId, storyReply: true },
+    })
+    .returning();
+
+  return replyMessage;
 }
 

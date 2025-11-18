@@ -66,6 +66,14 @@ export default function WelcomeScreen() {
           <Text className="text-text-secondary text-xl">MESSENGER</Text>
         </MotiView>
         <MotiView
+          from={{ opacity: 0, translateY: 20 }}
+          animate={{ opacity: 1, translateY: 0 }}
+          transition={{ delay: 500, type: "timing", duration: 600 }}
+          className="mt-4"
+        >
+          <Text className="text-accent text-sm font-semibold">+ AI Assistant Anna</Text>
+        </MotiView>
+        <MotiView
           from={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 600, type: "timing", duration: 400 }}

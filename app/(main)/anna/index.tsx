@@ -11,7 +11,7 @@ import { useAuthStore } from "@/stores/authStore";
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import { ArrowClockwise, ArrowLeft, Copy, PaperPlaneTilt } from "phosphor-react-native";
+import { ArrowClockwise, ArrowLeft, Copy, PaperPlaneTilt, VideoCamera } from "phosphor-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 
@@ -133,7 +133,15 @@ export default function AnnaScreen() {
               <AnnaAvatar isGenerating={isGenerating} size={32} />
             </View>
           </View>
-          <View className="w-8" />
+          <TouchableOpacity
+            onPress={() => {
+              router.push("/(main)/anna/video" as any);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }}
+            className="p-2"
+          >
+            <VideoCamera size={24} color="#FFFFFF" />
+          </TouchableOpacity>
         </View>
 
         <View className="flex-row gap-2">

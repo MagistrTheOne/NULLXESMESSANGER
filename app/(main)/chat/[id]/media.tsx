@@ -5,7 +5,8 @@ import * as FileSystem from "expo-file-system";
 import * as Haptics from "expo-haptics";
 import * as MediaLibrary from "expo-media-library";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ArrowLeft, Download, Image as ImageIcon, Paperclip, Video } from "phosphor-react-native";
+import * as Sharing from "expo-sharing";
+import { ArrowLeft, Download, Image as ImageIcon, Paperclip, Share, Video } from "phosphor-react-native";
 import React, { useEffect, useState } from "react";
 import { Alert, Dimensions, FlatList, Image, Modal, Text, TouchableOpacity, View } from "react-native";
 
@@ -53,6 +54,43 @@ export default function ChatMediaScreen() {
   const handleMediaPress = (item: any) => {
     setSelectedMedia(item);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const handleShare = async (item: any) => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+      // Check if sharing is available
+      const isAvailable = await Sharing.isAvailableAsync();
+      if (!isAvailable) {
+        Alert.alert("Ошибка", "Поделиться недоступно на этом устройстве");
+        return;
+      }
+
+      // Download file to cache first
+      const fileUri = item.content;
+      const filename = fileUri.split("/").pop() || `media_${item.id}.${item.type === "image" ? "jpg" : item.type === "video" ? "mp4" : "file"}`;
+      const documentDir = (FileSystem as any).documentDirectory || (FileSystem as any).cacheDirectory || "";
+      const downloadPath = `${documentDir}${filename}`;
+
+      const downloadResult = await FileSystem.downloadAsync(fileUri, downloadPath);
+
+      if (downloadResult.status === 200) {
+        // Share the file
+        await Sharing.shareAsync(downloadResult.uri, {
+          mimeType: item.type === "image" ? "image/jpeg" : item.type === "video" ? "video/mp4" : "application/octet-stream",
+          dialogTitle: "Поделиться медиа",
+        });
+
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } else {
+        throw new Error("Ошибка загрузки файла");
+      }
+    } catch (error: any) {
+      console.error("Error sharing media:", error);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert("Ошибка", error.message || "Не удалось поделиться медиа");
+    }
   };
 
   const handleDownload = async (item: any) => {
@@ -174,6 +212,12 @@ export default function ChatMediaScreen() {
             <Text className="text-text-primary text-lg font-semibold flex-1" numberOfLines={1}>
               {isFile ? selectedMedia.content.split("/").pop() : "Медиа"}
             </Text>
+            <TouchableOpacity
+              onPress={() => handleShare(selectedMedia)}
+              className="ml-2 p-2"
+            >
+              <Share size={20} color="#FFFFFF" />
+            </TouchableOpacity>
             <TouchableOpacity
               onPress={() => handleDownload(selectedMedia)}
               className="ml-2 p-2"

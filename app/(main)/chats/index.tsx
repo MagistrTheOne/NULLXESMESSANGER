@@ -195,7 +195,7 @@ export default function ChatsScreen() {
           <TouchableOpacity
             className="p-2"
             onPress={() => {
-              router.push("/chats/search" as any);
+              router.push("/search" as any);
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             }}
           >

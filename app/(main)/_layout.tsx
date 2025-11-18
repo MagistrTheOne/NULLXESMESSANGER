@@ -34,16 +34,22 @@ export default function MainLayout() {
         }}
       >
         <Drawer.Screen name="chats" options={{ drawerLabel: "Чаты" }} />
+        <Drawer.Screen name="search" options={{ drawerItemStyle: { display: "none" } }} />
         <Drawer.Screen name="chat/[id]" options={{ drawerItemStyle: { display: "none" } }} />
         <Drawer.Screen name="chat/[id]/group" options={{ drawerItemStyle: { display: "none" } }} />
         <Drawer.Screen name="chat/[id]/media" options={{ drawerItemStyle: { display: "none" } }} />
+        <Drawer.Screen name="chat/[id]/document" options={{ drawerItemStyle: { display: "none" } }} />
         <Drawer.Screen name="call/video" options={{ drawerItemStyle: { display: "none" } }} />
         <Drawer.Screen name="stories/create" options={{ drawerItemStyle: { display: "none" } }} />
         <Drawer.Screen name="stories/viewer" options={{ drawerItemStyle: { display: "none" } }} />
         <Drawer.Screen name="contacts" options={{ drawerLabel: "Контакты" }} />
         <Drawer.Screen name="calls" options={{ drawerLabel: "Звонки" }} />
         <Drawer.Screen name="anna" options={{ drawerLabel: "Anna" }} />
+        <Drawer.Screen name="anna/video" options={{ drawerItemStyle: { display: "none" } }} />
         <Drawer.Screen name="profile" options={{ drawerLabel: "Профиль" }} />
+        <Drawer.Screen name="profile/edit" options={{ drawerItemStyle: { display: "none" } }} />
+        <Drawer.Screen name="profile/security" options={{ drawerItemStyle: { display: "none" } }} />
+        <Drawer.Screen name="profile/data" options={{ drawerItemStyle: { display: "none" } }} />
         <Drawer.Screen name="profile/sessions" options={{ drawerItemStyle: { display: "none" } }} />
         <Drawer.Screen name="favorites" options={{ drawerLabel: "Избранное" }} />
         <Drawer.Screen name="settings" options={{ drawerLabel: "Настройки" }} />

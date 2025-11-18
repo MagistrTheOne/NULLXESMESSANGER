@@ -95,6 +95,8 @@ export const pinnedChats = pgTable("pinned_chats", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const storyPrivacyEnum = pgEnum("story_privacy", ["public", "contacts", "close_friends", "custom"]);
+
 export const stories = pgTable("stories", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
@@ -102,6 +104,8 @@ export const stories = pgTable("stories", {
   mediaType: text("media_type").notNull(),
   expiresAt: timestamp("expires_at").notNull(),
   viewsCount: text("views_count").default("0"),
+  privacy: storyPrivacyEnum("privacy").default("public").notNull(),
+  allowedUserIds: jsonb("allowed_user_ids").default("[]"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -134,8 +138,16 @@ export const contacts = pgTable("contacts", {
   name: text("name"),
   avatar: text("avatar"),
   syncedFromDevice: boolean("synced_from_device").default(false),
+  isFavorite: boolean("is_favorite").default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const blockedUsers = pgTable("blocked_users", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  blockedUserId: uuid("blocked_user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const userSessions = pgTable("user_sessions", {
@@ -145,6 +157,14 @@ export const userSessions = pgTable("user_sessions", {
   deviceType: text("device_type").notNull(),
   ipAddress: text("ip_address"),
   lastActiveAt: timestamp("last_active_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const searchHistory = pgTable("search_history", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  query: text("query").notNull(),
+  tab: text("tab").default("all"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
