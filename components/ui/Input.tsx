@@ -33,11 +33,3 @@ export function Input({ label, error, className = "", rightIcon, ...props }: Inp
   );
 }
 
-
-        )}
-      </View>
-      {error && <Text className="text-danger text-sm mt-1">{error}</Text>}
-    </View>
-  );
-}
-

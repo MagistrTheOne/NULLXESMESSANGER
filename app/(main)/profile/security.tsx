@@ -296,7 +296,7 @@ export default function SecuritySettingsScreen() {
               </Text>
             </View>
             <TouchableOpacity
-              onPress={() => router.push("/profile/sessions" as any)}
+              onPress={() => router.push("/(main)/profile/sessions" as any)}
               className="p-2"
             >
               <Text className="text-accent text-sm">Открыть</Text>

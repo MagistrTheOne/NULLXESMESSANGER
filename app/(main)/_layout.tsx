@@ -54,6 +54,11 @@ export default function MainLayout() {
         <Drawer.Screen name="favorites" options={{ drawerLabel: "Избранное" }} />
         <Drawer.Screen name="settings" options={{ drawerLabel: "Настройки" }} />
         <Drawer.Screen name="privacy" options={{ drawerItemStyle: { display: "none" } }} />
+        <Drawer.Screen name="wallet" options={{ drawerItemStyle: { display: "none" } }} />
+        <Drawer.Screen name="invite" options={{ drawerItemStyle: { display: "none" } }} />
+        <Drawer.Screen name="features" options={{ drawerItemStyle: { display: "none" } }} />
+        <Drawer.Screen name="chats/new" options={{ drawerItemStyle: { display: "none" } }} />
+        <Drawer.Screen name="chats/search" options={{ drawerItemStyle: { display: "none" } }} />
       </Drawer>
     </GestureHandlerRootView>
   );

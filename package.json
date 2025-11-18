@@ -83,12 +83,15 @@
     "zustand": "^5.0.2"
   },
   "devDependencies": {
+    "@babel/core": "^7.28.5",
     "@babel/plugin-transform-modules-commonjs": "^7.27.1",
+    "@expo/metro-runtime": "^6.1.2",
     "@types/node": "^22.10.5",
     "@types/react": "~19.1.0",
     "drizzle-kit": "^0.30.0",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
+    "prettier": "^3.0.0",
     "prettier-plugin-tailwindcss": "^0.5.11",
     "tailwindcss": "^3.4.17",
     "typescript": "~5.9.2"

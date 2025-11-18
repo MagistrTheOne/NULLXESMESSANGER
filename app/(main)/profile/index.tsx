@@ -226,28 +226,28 @@ export default function ProfileScreen() {
         <Card className="p-4 mb-4">
           <Text className="text-text-primary text-base font-semibold mb-4">Настройки</Text>
           <TouchableOpacity
-            onPress={() => router.push("/profile/edit" as any)}
+            onPress={() => router.push("/(main)/profile/edit" as any)}
             className="py-3 border-b border-accent/10"
             activeOpacity={0.7}
           >
             <Text className="text-text-primary">Редактировать профиль</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => router.push("/profile/security" as any)}
+            onPress={() => router.push("/(main)/profile/security" as any)}
             className="py-3 border-b border-accent/10"
             activeOpacity={0.7}
           >
             <Text className="text-text-primary">Безопасность</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => router.push("/profile/data" as any)}
+            onPress={() => router.push("/(main)/profile/data" as any)}
             className="py-3 border-b border-accent/10"
             activeOpacity={0.7}
           >
             <Text className="text-text-primary">Управление данными</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => router.push("/profile/sessions" as any)}
+            onPress={() => router.push("/(main)/profile/sessions" as any)}
             className="py-3"
             activeOpacity={0.7}
           >
@@ -258,44 +258,14 @@ export default function ProfileScreen() {
         <Card className="p-4 mb-4">
           <Text className="text-text-primary text-base font-semibold mb-4">Приватность</Text>
           <TouchableOpacity
-            onPress={() => router.push("/privacy" as any)}
+            onPress={() => router.push("/(main)/privacy" as any)}
             className="py-3 border-b border-accent/10"
             activeOpacity={0.7}
           >
             <Text className="text-text-primary">Настройки приватности</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => router.push("/contacts" as any)}
-            className="py-3"
-            activeOpacity={0.7}
-          >
-            <Text className="text-text-primary">Блокированные пользователи</Text>
-          </TouchableOpacity>
-        </Card>
-
-        <Button
-          title="Сохранить изменения"
-          onPress={handleSave}
-          loading={loading}
-          className="mt-4"
-        />
-      </ScrollView>
-    </View>
-  );
-}
-
-
-        <Card className="p-4 mb-4">
-          <Text className="text-text-primary text-base font-semibold mb-4">Приватность</Text>
-          <TouchableOpacity
-            onPress={() => router.push("/privacy" as any)}
-            className="py-3 border-b border-accent/10"
-            activeOpacity={0.7}
-          >
-            <Text className="text-text-primary">Настройки приватности</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => router.push("/contacts" as any)}
+            onPress={() => router.push("/(main)/contacts" as any)}
             className="py-3"
             activeOpacity={0.7}
           >

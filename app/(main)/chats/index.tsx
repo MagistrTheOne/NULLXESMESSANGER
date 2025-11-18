@@ -195,7 +195,7 @@ export default function ChatsScreen() {
           <TouchableOpacity
             className="p-2"
             onPress={() => {
-              router.push("/search" as any);
+              router.push("/(main)/search" as any);
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             }}
           >
@@ -217,9 +217,9 @@ export default function ChatsScreen() {
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               if (item.isOwn && item.stories.length === 0) {
-                router.push("/stories/create" as any);
+                router.push("/(main)/stories/create" as any);
               } else {
-                router.push(`/stories/viewer?userId=${item.userId}` as any);
+                router.push(`/(main)/stories/viewer?userId=${item.userId}` as any);
               }
             }}
           />
@@ -291,7 +291,7 @@ export default function ChatsScreen() {
       <View className="absolute bottom-6 right-6">
         <FloatingActionButton
           icon="pencil"
-          onPress={() => router.push("/chats/new" as any)}
+          onPress={() => router.push("/(main)/chats/new" as any)}
         />
       </View>
     </View>

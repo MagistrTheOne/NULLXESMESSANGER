@@ -248,33 +248,3 @@ export default function CreateStoryScreen() {
   );
 }
 
-
-        <View className="flex-1 items-center justify-center px-6">
-          <View className="flex-row gap-4 mb-8">
-            <TouchableOpacity
-              onPress={() => handlePickMedia("image")}
-              className="bg-secondary/60 p-6 rounded-2xl items-center"
-            >
-              <ImageIcon size={48} color="#00B7FF" />
-              <Text className="text-text-primary mt-4 font-semibold">Фото</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => handlePickMedia("video")}
-              className="bg-secondary/60 p-6 rounded-2xl items-center"
-            >
-              <Camera size={48} color="#00B7FF" />
-              <Text className="text-text-primary mt-4 font-semibold">Видео</Text>
-            </TouchableOpacity>
-          </View>
-          <TouchableOpacity
-            onPress={handleTakePhoto}
-            className="bg-accent px-8 py-4 rounded-full"
-          >
-            <Text className="text-white font-semibold text-lg">Сделать фото</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-    </View>
-  );
-}
-
